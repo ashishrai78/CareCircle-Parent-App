@@ -1,0 +1,84 @@
+name: carecircle_parent1
+description: "A new Flutter project."
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+  #--------------- PACKAGES --------------#flu
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Utility Packages
+  smooth_page_indicator: ^1.2.1
+  flutter_native_splash: ^2.4.5
+  lottie: ^3.3.1
+  iconsax: ^0.0.8
+  # Network Packages
+  connectivity_plus: ^6.1.3
+  # Google map
+  google_maps_flutter: ^2.14.0
+  url_launcher: ^6.3.1
+
+  flutter_webrtc: ^1.3.1
+
+
+  # Firebase Packages
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.1
+  cloud_firestore: ^6.0.0
+  google_sign_in: ^6.3.0
+
+
+  # State Management
+  get: ^4.7.3
+  get_storage: ^2.1.1
+
+  # Product Specific
+  intl: ^0.20.2
+
+
+  #--------------- PACKAGES END --------------#
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+  flutter_lints: ^5.0.0
+
+
+flutter:
+  uses-material-design: true
+
+  #--------------- LOCAL ASSETS --------------#
+  assets:
+    - assets/logo/
+    - assets/animations/
+    - assets/images/
+
+
+  #--------------- LOCAL FONTS --------------#
+  fonts:
+    - family: 'Nunito'
+      fonts:
+        - asset: assets/fonts/Nunito-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Nunito-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Nunito-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Nunito-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 800
+
+

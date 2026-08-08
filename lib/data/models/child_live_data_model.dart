@@ -1,0 +1,261 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// 📍 ChildLiveDataModel — represents child_live_data/{childUid} document
+///
+/// Contains real-time device data: location, battery, network, device info.
+/// Updated by child app every 60s (heartbeat) + on sync_request.
+class ChildLiveDataModel {
+  final double? lat;
+  final double? lng;
+  final double? accuracy;
+  final double? altitude;
+  final double? speed;
+  final double? bearing;
+  final String? address;
+  final bool? isMock;
+  final String? locationProvider;
+
+  final int battery;
+  final bool isCharging;
+  final double? batteryTemp;
+  final double? batteryVoltage;
+  final String? batteryHealth;
+  final String? powerSource;
+
+  final String? networkType;
+  final String? carrier;
+  final String? wifiSsid;
+  final String? ip;
+  final bool hasInternet;
+
+  final String? device;
+  final String? osVersion;
+  final int? sdkVersion;
+  final String? buildNumber;
+  final String? androidId;
+  final bool rooted;
+
+  final int? storageTotalMB;
+  final int? storageAvailableMB;
+  final int? storageUsedPct;
+  final int? ramTotalMB;
+  final int? ramAvailableMB;
+  final int? ramUsedPct;
+
+  final DateTime? heartbeat;
+  final DateTime? timestamp;
+  final bool serviceAlive;
+
+  final String? currentAppPackage;
+  final String? currentAppName;
+  final bool currentAppIsSystem;
+  final int? currentAppSecondsAgo;
+
+
+  ChildLiveDataModel({
+    this.lat,
+    this.lng,
+    this.accuracy,
+    this.altitude,
+    this.speed,
+    this.bearing,
+    this.address,
+    this.isMock,
+    this.locationProvider,
+    required this.battery,
+    required this.isCharging,
+    this.batteryTemp,
+    this.batteryVoltage,
+    this.batteryHealth,
+    this.powerSource,
+    this.networkType,
+    this.carrier,
+    this.wifiSsid,
+    this.ip,
+    required this.hasInternet,
+    this.device,
+    this.osVersion,
+    this.sdkVersion,
+    this.buildNumber,
+    this.androidId,
+    required this.rooted,
+    this.storageTotalMB,
+    this.storageAvailableMB,
+    this.storageUsedPct,
+    this.ramTotalMB,
+    this.ramAvailableMB,
+    this.ramUsedPct,
+    this.heartbeat,
+    this.timestamp,
+    required this.serviceAlive,
+    this.currentAppPackage,
+    this.currentAppName,
+    this.currentAppIsSystem = false,
+    this.currentAppSecondsAgo,
+  });
+
+  factory ChildLiveDataModel.fromFirestore(Map<String, dynamic> data) {
+    return ChildLiveDataModel(
+      // Location
+      lat: _toDouble(data['lat']),
+      lng: _toDouble(data['lng']),
+      accuracy: _toDouble(data['accuracy']),
+      altitude: _toDouble(data['altitude']),
+      speed: _toDouble(data['speed']),
+      bearing: _toDouble(data['bearing']),
+      address: data['address'] as String?,
+      isMock: data['isMock'] as bool?,
+      locationProvider: data['locationProvider'] as String?,
+
+      // Battery
+      battery: (data['battery'] as num?)?.toInt() ?? 0,
+      isCharging: data['isCharging'] as bool? ?? false,
+      batteryTemp: _toDouble(data['batteryTemp']),
+      batteryVoltage: _toDouble(data['batteryVoltage']),
+      batteryHealth: data['batteryHealth'] as String?,
+      powerSource: data['powerSource'] as String?,
+
+      // Network
+      networkType: data['networkType'] as String?,
+      carrier: data['carrier'] as String?,
+      wifiSsid: data['wifiSsid'] as String?,
+      ip: data['ip'] as String?,
+      hasInternet: data['hasInternet'] as bool? ?? false,
+
+      // Device
+      device: data['device'] as String?,
+      osVersion: data['osVersion'] as String?,
+      sdkVersion: (data['sdkVersion'] as num?)?.toInt(),
+      buildNumber: data['buildNumber'] as String?,
+      androidId: data['androidId'] as String?,
+      rooted: data['rooted'] as bool? ?? false,
+
+      // Storage & Memory
+      storageTotalMB: (data['storageTotalMB'] as num?)?.toInt(),
+      storageAvailableMB: (data['storageAvailableMB'] as num?)?.toInt(),
+      storageUsedPct: (data['storageUsedPct'] as num?)?.toInt(),
+      ramTotalMB: (data['ramTotalMB'] as num?)?.toInt(),
+      ramAvailableMB: (data['ramAvailableMB'] as num?)?.toInt(),
+      ramUsedPct: (data['ramUsedPct'] as num?)?.toInt(),
+
+      // Status
+      heartbeat: (data['heartbeat'] as Timestamp?)?.toDate(),
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate(),
+      serviceAlive: data['serviceAlive'] as bool? ?? false,
+
+      // Current App Active
+      currentAppPackage: data['currentAppPackage'] as String?,
+      currentAppName: data['currentAppName'] as String?,
+      currentAppIsSystem: data['currentAppIsSystem'] as bool? ?? false,
+      currentAppSecondsAgo: (data['currentAppSecondsAgo'] as num?)?.toInt(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'lat': lat,
+      'lng': lng,
+      'accuracy': accuracy,
+      'altitude': altitude,
+      'speed': speed,
+      'bearing': bearing,
+      'address': address,
+      'isMock': isMock,
+      'battery': battery,
+      'isCharging': isCharging,
+      'networkType': networkType,
+      'device': device,
+      'heartbeat': heartbeat != null ? Timestamp.fromDate(heartbeat!) : null,
+      'timestamp': timestamp != null ? Timestamp.fromDate(timestamp!) : null,
+      'serviceAlive': serviceAlive,
+    };
+  }
+
+  /// Check if child is online (heartbeat < 5 min old)
+  bool get isOnline {
+    if (heartbeat == null) return false;
+    final diff = DateTime.now().difference(heartbeat!);
+    return diff.inMinutes < 5;
+  }
+
+  /// Online status label
+  String get onlineStatus => isOnline ? 'Online' : 'Offline';
+
+  /// Check if location is available
+  bool get hasLocation => lat != null && lng != null;
+
+  /// Battery status text
+  String get batteryStatusText {
+    if (isCharging) return 'Charging';
+    if (battery >= 80) return 'Full';
+    if (battery >= 50) return 'Good';
+    if (battery >= 20) return 'Low';
+    return 'Critical';
+  }
+
+  /// Battery color (green/orange/red)
+  int get batteryColorValue {
+    if (isCharging) return 0xFF4CAF50; // green
+    if (battery < 20) return 0xFFEF4444; // red
+    if (battery < 50) return 0xFFFFA726; // orange
+    return 0xFF4CAF50; // green
+  }
+
+  /// Last updated formatted
+  String get lastUpdatedFormatted {
+    if (timestamp == null) return 'Never';
+    final diff = DateTime.now().difference(timestamp!);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    return null;
+  }
+
+  /// Whether child is using any app right now (within last 30 sec)
+  bool get isUsingApp => currentAppName != null && currentAppName != 'Idle' &&
+      (currentAppSecondsAgo ?? 999) < 30;
+
+  /// Status label for UI
+  String get currentAppStatus {
+    if (currentAppName == null || currentAppName == 'Idle') {
+      return 'Device idle';
+    }
+    if ((currentAppSecondsAgo ?? 999) > 60) {
+      return 'Last used: $currentAppName';
+    }
+    return 'Using: $currentAppName';
+  }
+
+  /// App emoji (best guess)
+  String get currentAppEmoji {
+    final pkg = (currentAppPackage ?? '').toLowerCase();
+    final name = (currentAppName ?? '').toLowerCase();
+    if (pkg.contains('whatsapp') || name.contains('whatsapp')) return '💬';
+    if (pkg.contains('instagram')) return '📷';
+    if (pkg.contains('facebook')) return '👥';
+    if (pkg.contains('youtube')) return '▶️';
+    if (pkg.contains('spotify')) return '🎵';
+    if (pkg.contains('gmail') || pkg.contains('.gm')) return '📧';
+    if (pkg.contains('chrome')) return '🌐';
+    if (pkg.contains('maps')) return '🗺️';
+    if (pkg.contains('snapchat')) return '👻';
+    if (pkg.contains('telegram')) return '✈️';
+    if (pkg.contains('tiktok')) return '🎬';
+    if (pkg.contains('twitter')) return '🐦';
+    if (pkg.contains('linkedin')) return '💼';
+    if (pkg.contains('messages') || pkg.contains('messaging')) return '📩';
+    if (pkg.contains('phone') || pkg.contains('dialer')) return '📞';
+    if (pkg.contains('netflix')) return '🎬';
+    if (pkg.contains('amazon')) return '📦';
+    if (pkg.contains('games') || pkg.contains('game')) return '🎮';
+    return '📱';
+  }
+}
