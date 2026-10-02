@@ -76,10 +76,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             tooltip: 'Pick Date',
             onPressed: controller.pickDate,
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: controller.refreshData,
-          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(110),

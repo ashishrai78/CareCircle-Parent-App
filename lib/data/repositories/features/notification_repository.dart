@@ -80,16 +80,18 @@ class NotificationRepository {
         .doc(childUid)
         .collection(_subCollection)
         .where('dateKey', isEqualTo: dateKey)
-        .orderBy('postedAt', descending: true)
         .limit(500)
         .get();
 
-    return snapshot.docs
+    final notifs = snapshot.docs
         .map((doc) => NotificationModel.fromFirestore(
               doc.id,
               Map<String, dynamic>.from(doc.data()),
             ))
         .toList();
+
+    notifs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return notifs;
   }
 
   /// Get notifications by package (for app-wise filter)
@@ -103,16 +105,18 @@ class NotificationRepository {
         .doc(childUid)
         .collection(_subCollection)
         .where('packageName', isEqualTo: packageName)
-        .orderBy('postedAt', descending: true)
         .limit(limit)
         .get();
 
-    return snapshot.docs
+    final notifs = snapshot.docs
         .map((doc) => NotificationModel.fromFirestore(
               doc.id,
               Map<String, dynamic>.from(doc.data()),
             ))
         .toList();
+
+    notifs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return notifs;
   }
 
   /// Get notifications for last N days

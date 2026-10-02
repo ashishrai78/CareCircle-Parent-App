@@ -153,10 +153,7 @@ class LocationRepository {
 
   /// Compute stats from a list of locations (only valid GPS points)
   LocationStats computeStats(List<LocationModel> locations) {
-    // 🔥 Only use valid GPS locations for stats (skip cell tower basic + invalid)
-    final validLocations = locations.where((l) =>
-      l.isValid && l.locationType != LocationType.cellTowerBasic
-    ).toList();
+    final validLocations = locations.where((l) => l.isValid).toList();
 
     if (validLocations.isEmpty) {
       return LocationStats(totalPoints: locations.length);

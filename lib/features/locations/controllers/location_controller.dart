@@ -140,17 +140,13 @@ class LocationController extends GetxController {
   /// 🔥 Get marker color based on location type
   double _getMarkerHue(LocationModel location) {
     if (location.isMocked) {
-      return BitmapDescriptor.hueOrange;  // Spoofed — orange
+      return BitmapDescriptor.hueOrange;
     }
     switch (location.locationType) {
       case LocationType.gps:
-        return BitmapDescriptor.hueAzure;          // Accurate — blue
-      case LocationType.cellTowerResolved:
-        return BitmapDescriptor.hueYellow;          // Approximate — yellow
-      case LocationType.cellTowerBasic:
-        return BitmapDescriptor.hueRed;             // No location — red
+        return BitmapDescriptor.hueAzure;
       case LocationType.cached:
-        return BitmapDescriptor.hueViolet;          // Cached — purple
+        return BitmapDescriptor.hueViolet;
       case LocationType.unknown:
         return BitmapDescriptor.hueAzure;
     }
@@ -213,11 +209,9 @@ class LocationController extends GetxController {
   double _getZoomLevel(LocationModel location) {
     switch (location.locationType) {
       case LocationType.gps:
-        return 16.0;       // Street level for GPS
-      case LocationType.cellTowerResolved:
-        return 12.0;       // City level for cell tower (5km accuracy)
+        return 16.0;
       case LocationType.cached:
-        return 15.0;       // Street level for cached
+        return 15.0;
       default:
         return 14.0;
     }
@@ -342,19 +336,16 @@ class LocationController extends GetxController {
 
   bool get isMocked => liveLocation.value?.isMocked ?? false;
 
-  /// 🔥 Whether location is OFF on child device
   bool get isLocationOff {
     final loc = liveLocation.value;
     if (loc == null) return false;
-    return !loc.isLocationServiceOn || loc.locationType == LocationType.cellTowerBasic;
+    return !loc.isLocationServiceOn;
   }
 
-  /// 🔥 Whether location is approximate (cell tower)
   bool get isApproximate {
     final loc = liveLocation.value;
     if (loc == null) return false;
-    return loc.isApproximateLocation ||
-        loc.locationType == LocationType.cellTowerResolved;
+    return loc.isApproximateLocation;
   }
 
   /// 🔥 Whether location is from cache
@@ -382,9 +373,6 @@ class LocationController extends GetxController {
 
   /// 🔥 Status message for UI
   String get statusMessage => liveLocation.value?.statusMessage ?? '';
-
-  /// 🔥 Cell info (if available)
-  CellInfo? get cellInfo => liveLocation.value?.cellInfo;
 
   int get historyCount => history.length;
 

@@ -122,8 +122,16 @@ class ChildDeviceInfoController extends GetxController {
 
   double? get longitude => data?.lng;
 
-  String get locationStatus =>
-      hasLocation ? 'Location available' : 'Location unavailable';
+  String get locationStatus {
+    if (!hasLocation) return 'Location unavailable';
+    if (data?.locationServiceOn == false) {
+      return 'Last Known Location (GPS OFF)';
+    }
+    if (data?.isCached == true) {
+      return 'Last Known Location';
+    }
+    return 'Location available';
+  }
 
   String? get address => data?.address;
 

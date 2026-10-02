@@ -14,6 +14,8 @@ class ChildLiveDataModel {
   final String? address;
   final bool? isMock;
   final String? locationProvider;
+  final bool? isCached;
+  final bool? locationServiceOn;
 
   final int battery;
   final bool isCharging;
@@ -62,6 +64,8 @@ class ChildLiveDataModel {
     this.address,
     this.isMock,
     this.locationProvider,
+    this.isCached,
+    this.locationServiceOn,
     required this.battery,
     required this.isCharging,
     this.batteryTemp,
@@ -106,6 +110,8 @@ class ChildLiveDataModel {
       address: data['address'] as String?,
       isMock: data['isMock'] as bool?,
       locationProvider: data['locationProvider'] as String?,
+      isCached: data['isCached'] as bool?,
+      locationServiceOn: data['locationServiceOn'] as bool?,
 
       // Battery
       battery: (data['battery'] as num?)?.toInt() ?? 0,
@@ -182,7 +188,7 @@ class ChildLiveDataModel {
   String get onlineStatus => isOnline ? 'Online' : 'Offline';
 
   /// Check if location is available
-  bool get hasLocation => lat != null && lng != null;
+  bool get hasLocation => lat != null && lng != null && lat != 0.0 && lng != 0.0;
 
   /// Battery status text
   String get batteryStatusText {

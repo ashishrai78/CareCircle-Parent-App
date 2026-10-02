@@ -197,16 +197,26 @@ class ScreenTimeController extends GetxController {
 
   int? get peakHour => screenTime.value.peakHour;
 
+  List<DateTime> get last7Days {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return List.generate(7, (index) => today.subtract(Duration(days: index)));
+  }
+
   // ============ Actions ============
 
   void toggleShowAllApps() => showAllApps.toggle();
 
-  /// Open date picker
+  /// Open date picker (Restricted to last 7 days)
   Future<void> pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final firstDate7 = today.subtract(const Duration(days: 6));
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate.value,
-      firstDate: DateTime(2024, 1, 1),
+      initialDate: selectedDate.value.isBefore(firstDate7) ? today : selectedDate.value,
+      firstDate: firstDate7,
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
