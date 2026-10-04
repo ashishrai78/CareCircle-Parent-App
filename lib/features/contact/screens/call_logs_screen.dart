@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../common/widgets/custom_shape/roundedBorder_container.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
@@ -54,9 +55,7 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
               ),
             ),
             Obx(() => Text(
-                  controller.hasLogs
-                      ? '${controller.totalCalls} calls • ${controller.missedCount} missed'
-                      : 'No calls yet',
+                  '${controller.selectedDateLabel} • ${controller.totalCalls} calls • ${controller.missedCount} missed',
                   style: TextStyle(
                     fontSize: 12,
                     color: UColors.textSecondary,
@@ -65,20 +64,35 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
           ],
         ),
         actions: [
+          // Manual Sync button
+          IconButton(
+            onPressed: () => controller.requestCallLogsSync(),
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync Call Logs',
+          ),
           // Contacts button
           IconButton(
             onPressed: () => Get.to(() => ContactsScreen(
-              childUid: widget.childUid,  // child ka UID
-              childName: widget.childName,  // optional
+              childUid: widget.childUid,
+              childName: widget.childName,
             )),
-            icon: Icon(Icons.contacts),
+            icon: const Icon(Icons.contacts),
+            tooltip: 'View Contacts',
           ),
         ],
       ),
       body: Column(
         children: [
+          // 1. Horizontal 7-Day Selector
+          _build7DaySelector(),
+
+          // 2. Filter Tabs (All / Incoming / Outgoing / Missed)
           _buildFilterTabs(),
+
+          // 3. Daily Stats Bar
           _buildStatsBar(),
+
+          // 4. Calls List
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value) {
@@ -91,12 +105,123 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                 return _buildEmpty();
               }
               if (controller.filteredLogs.isEmpty) {
-                return _buildNoResults();
+                return _buildNoResultsForDay();
               }
               return _buildCallLogsList();
             }),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 📅 Horizontal 7-Day Date Selector
+  Widget _build7DaySelector() {
+    final days = controller.last7Days;
+    return Container(
+      height: 78,
+      margin: const EdgeInsets.fromLTRB(USizes.md, USizes.sm, USizes.md, 0),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: days.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final date = days[index];
+          return Obx(() {
+            final isSelected = controller.isSameDay(controller.selectedDate.value, date);
+            final callCount = controller.getCallCountForDate(date);
+
+            final isToday = controller.isSameDay(date, DateTime.now());
+            final isYesterday = controller.isSameDay(date, DateTime.now().subtract(const Duration(days: 1)));
+
+            String dayLabel;
+            if (isToday) {
+              dayLabel = 'Today';
+            } else if (isYesterday) {
+              dayLabel = 'Y\'day';
+            } else {
+              dayLabel = DateFormat('EEE').format(date);
+            }
+
+            final dayNumber = DateFormat('d').format(date);
+            final monthLabel = DateFormat('MMM').format(date);
+
+            return GestureDetector(
+              onTap: () => controller.selectDate(date),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 62,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: isSelected ? UColors.primary : UColors.white,
+                  borderRadius: BorderRadius.circular(USizes.borderRadiusMd),
+                  border: Border.all(
+                    color: isSelected ? UColors.primary : UColors.borderPrimary,
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: UColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      dayLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? Colors.white : UColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      dayNumber,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected ? Colors.white : UColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : (callCount > 0 ? UColors.primary.withValues(alpha: 0.12) : Colors.transparent),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        callCount > 0 ? '$callCount' : monthLabel,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: isSelected ? FontWeight.w700 : (callCount > 0 ? FontWeight.w700 : FontWeight.w500),
+                          color: isSelected
+                              ? Colors.white
+                              : (callCount > 0 ? UColors.primary : UColors.textTertiary),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          });
+        },
       ),
     );
   }
@@ -154,8 +279,6 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
 
   Widget _buildStatsBar() {
     return Obx(() {
-      if (!controller.hasLogs) return const SizedBox.shrink();
-
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: USizes.md),
         child: Row(
@@ -244,6 +367,10 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
   }
 
   Widget _buildCallLogTile(CallLogModel log) {
+    final hasRealName = log.contactName != null &&
+        log.contactName!.trim().isNotEmpty &&
+        log.contactName != 'Unknown';
+
     return URoundedContainer(
       margin: const EdgeInsets.only(bottom: USizes.sm),
       color: UColors.white,
@@ -286,34 +413,53 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
               ),
             ),
             const SizedBox(width: USizes.xs),
+            // ⏰ 12-Hour formatted timing (e.g. 10:35 AM)
             Text(
               log.timeOfDay,
-              style: TextStyle(
-                fontSize: 11,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: UColors.textTertiary,
               ),
             ),
           ],
         ),
-        subtitle: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              log.typeLabel,
-              style: TextStyle(
-                fontSize: 11,
-                color: Color(log.typeColor),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (log.duration > 0) ...[
+            const SizedBox(height: 2),
+            // Display Phone Number if contact has a name
+            if (hasRealName && log.phoneNumber != 'Unknown') ...[
               Text(
-                ' • ${log.durationFormatted}',
-                style: TextStyle(
-                  fontSize: 11,
+                log.phoneNumber,
+                style: const TextStyle(
+                  fontSize: 12,
                   color: UColors.textSecondary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+              const SizedBox(height: 2),
             ],
+            // Type & Duration
+            Row(
+              children: [
+                Text(
+                  log.typeLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(log.typeColor),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  ' • ${log.durationFormatted}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: UColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         trailing: log.phoneNumber != 'Unknown'
@@ -385,7 +531,7 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
             const SizedBox(height: USizes.xs),
             Text(
               log.phoneNumber,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: UColors.textSecondary,
               ),
@@ -419,8 +565,8 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
             const SizedBox(height: USizes.md),
             Center(
               child: Text(
-                '${log.typeLabel} • ${log.timeAgo} • ${log.durationFormatted}',
-                style: TextStyle(
+                '${log.typeLabel} • ${log.timeOfDay} • ${log.durationFormatted}',
+                style: const TextStyle(
                   fontSize: 12,
                   color: UColors.textTertiary,
                 ),
@@ -433,13 +579,13 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
   }
 
   Widget _buildLoading() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: UColors.primary),
-          const SizedBox(height: USizes.md),
-          const Text(
+          CircularProgressIndicator(color: UColors.primary),
+          SizedBox(height: USizes.md),
+          Text(
             'Loading call logs...',
             style: TextStyle(color: UColors.textSecondary),
           ),
@@ -474,36 +620,26 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(USizes.xl),
+        padding: EdgeInsets.all(USizes.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.phone, size: 64, color: UColors.textTertiary),
-            const SizedBox(height: USizes.md),
-            const Text(
+            Icon(Icons.phone, size: 64, color: UColors.textTertiary),
+            SizedBox(height: USizes.md),
+            Text(
               'No Call Logs Yet',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: USizes.xs),
-            const Text(
-              'Call logs will appear here when the child device detects calls',
+            SizedBox(height: USizes.xs),
+            Text(
+              'Call logs will appear here when the child device detects calls.',
               textAlign: TextAlign.center,
               style: TextStyle(color: UColors.textSecondary),
-            ),
-            const SizedBox(height: USizes.md),
-            const Text(
-              '⚠️ Note: Call monitoring must be enabled on child device',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: UColors.warning,
-                fontStyle: FontStyle.italic,
-              ),
             ),
           ],
         ),
@@ -511,24 +647,26 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
     );
   }
 
-  Widget _buildNoResults() {
+  Widget _buildNoResultsForDay() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.filter_alt_off, size: 64, color: UColors.textTertiary),
+          const Icon(Icons.phone_missed_outlined, size: 54, color: UColors.textTertiary),
           const SizedBox(height: USizes.md),
-          const Text(
-            'No Calls Found',
-            style: TextStyle(
+          Text(
+            'No Calls on ${controller.selectedDateLabel}',
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: USizes.xs),
-          const Text(
-            'Try changing the filter',
-            style: TextStyle(color: UColors.textSecondary),
+          Text(
+            controller.isTodaySelected
+                ? 'Calls made or received today will appear here.'
+                : 'No call records found for this date.',
+            style: const TextStyle(color: UColors.textSecondary, fontSize: 13),
           ),
         ],
       ),

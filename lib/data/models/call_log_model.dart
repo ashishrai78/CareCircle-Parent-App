@@ -85,12 +85,16 @@ class CallLogModel {
   }
 
   String get durationFormatted {
-    if (duration == 0) return '—';
-    final min = duration ~/ 60;
+    if (type == CallType.missed) return 'Missed';
+    if (type == CallType.rejected) return 'Rejected';
+    if (duration <= 0) return '0 sec';
+    final hours = duration ~/ 3600;
+    final min = (duration % 3600) ~/ 60;
     final sec = duration % 60;
-    if (min == 0) return '$sec sec';
-    if (sec == 0) return '$min min';
-    return '$min min $sec sec';
+    if (hours > 0) return '${hours}h ${min}m ${sec}s';
+    if (min > 0 && sec > 0) return '${min}m ${sec}s';
+    if (min > 0) return '$min min';
+    return '$sec sec';
   }
 
   String get timeAgo {
@@ -102,15 +106,20 @@ class CallLogModel {
     return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
   }
 
+  /// 12-Hour formatted timing: hh:mm AM/PM (e.g., "10:30 AM", "02:15 PM")
   String get timeOfDay {
-    final hour = timestamp.hour.toString().padLeft(2, '0');
+    final hour = timestamp.hour;
     final minute = timestamp.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '${hour12.toString().padLeft(2, '0')}:$minute $period';
   }
 
   String get displayName {
-    if (contactName != null && contactName!.isNotEmpty) {
-      return contactName!;
+    if (contactName != null &&
+        contactName!.trim().isNotEmpty &&
+        contactName != 'Unknown') {
+      return contactName!.trim();
     }
     return phoneNumber;
   }
