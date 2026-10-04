@@ -55,27 +55,23 @@ class UTexts {
 
   // ============ FORGET PASSWORD ============
   static const String forgetPasswordTitle = 'Forgot Password';
-  static const String forgetPasswordSubTitle =
-      'No worries! Enter your registered email address, and we\'ll help you reset your password.';
+  static const String forgetPasswordSubTitle = 'No worries! Enter your registered email address, and we\'ll help you reset your password.';
   static const String submit = 'Submit';
 
   // ============ RESET PASSWORD ============
   static const String resetPasswordTitle = 'Password Reset Email Sent';
-  static const String resetPasswordSubTitle =
-      'We\'ve sent a password reset link to your email. Please check your inbox and follow the instructions to reset your password.';
+  static const String resetPasswordSubTitle = 'We\'ve sent a password reset link to your email. Please check your inbox and follow the instructions to reset your password.';
   static const String done = 'Done';
 
   // ============ VERIFY EMAIL ============
   static const String verifyEmailTitle = 'Verify your email address!';
-  static const String verifyEmailSubTitle =
-      'We\'ve sent a verification link to your email. Please check your inbox and click the link to verify your account.';
+  static const String verifyEmailSubTitle = 'We\'ve sent a verification link to your email. Please check your inbox and click the link to verify your account.';
   static const String uContinue = 'Continue';
   static const String resendEmail = 'Resend Email';
 
   // ============ ACCOUNT CREATED ============
   static const String accountCreatedTitle = 'Account Successfully Created';
-  static const String accountCreatedSubTitle =
-      'Welcome to CareCircle! Your account has been created. Add your child\'s device to start monitoring.';
+  static const String accountCreatedSubTitle = 'Welcome to CareCircle! Your account has been created. Add your child\'s device to start monitoring.';
 
   // ============ HOME SCREEN ============
   static const String homeTitle = 'Dashboard';
@@ -84,8 +80,7 @@ class UTexts {
   static const String yourChildren = 'Your Children';
   static const String addChild = 'Add Child';
   static const String noChildrenAdded = 'No children added yet';
-  static const String noChildrenSubTitle =
-      'Add your child\'s device to start monitoring their activity.';
+  static const String noChildrenSubTitle = 'Add your child\'s device to start monitoring their activity.';
 
   // ============ CHILD CARD ============
   static const String online = 'Online';
@@ -107,14 +102,12 @@ class UTexts {
 
   // ============ LISTEN SURROUNDINGS ============
   static const String listenTitle = 'Listen to Surroundings';
-  static const String listenSubTitle =
-      'Start a live audio session to hear what\'s happening around your child.';
+  static const String listenSubTitle = 'Start a live audio session to hear what\'s happening around your child.';
   static const String startListening = 'Start Listening';
   static const String stopListening = 'Stop Listening';
   static const String listeningActive = 'Listening Active';
   static const String connectingToChild = 'Connecting to child device...';
-  static const String listeningWarning =
-      'This will activate the microphone on your child\'s device. They will see a notification.';
+  static const String listeningWarning = 'This will activate the microphone on your child\'s device. They will see a notification.';
 
   // ============ SCREEN TIME ============
   static const String todayScreenTime = 'Today\'s Screen Time';
@@ -148,15 +141,13 @@ class UTexts {
 
   // ============ ADD CHILD ============
   static const String addChildTitle = 'Add Child Device';
-  static const String addChildSubTitle =
-      'Link your child\'s device to your account using the pairing code.';
+  static const String addChildSubTitle = 'Link your child\'s device to your account using the pairing code.';
   static const String pairingCode = 'Pairing Code';
   static const String pairingCodeHint = 'Enter 6-digit code';
   static const String generateCode = 'Generate Pairing Code';
   static const String scanQRCode = 'Scan QR Code';
   static const String linkDevice = 'Link Device';
-  static const String pairingInstructions =
-      'Open CareCircle Child App on your child\'s device, go to Settings > Link to Parent, and enter this code.';
+  static const String pairingInstructions = 'Open CareCircle Child App on your child\'s device, go to Settings > Link to Parent, and enter this code.';
 
   // ============ PROFILE ============
   static const String profile = 'Profile';
@@ -167,8 +158,7 @@ class UTexts {
   static const String helpSupport = 'Help & Support';
   static const String about = 'About CareCircle';
   static const String logout = 'Log Out';
-  static const String logoutConfirmation =
-      'Are you sure you want to log out? You\'ll need to sign in again to monitor your children.';
+  static const String logoutConfirmation = 'Are you sure you want to log out? You\'ll need to sign in again to monitor your children.';
 
   // ============ ERRORS ============
   static const String errorOccurred = 'An error occurred';
@@ -177,8 +167,7 @@ class UTexts {
   static const String failedToLoad = 'Failed to load data';
   static const String permissionDenied = 'Permission denied';
   static const String childOffline = 'Child device is offline';
-  static const String childOfflineMessage =
-      'Please ensure your child\'s device is connected to the internet.';
+  static const String childOfflineMessage = 'Please ensure your child\'s device is connected to the internet.';
 
   // ============ SUCCESS ============
   static const String success = 'Success!';

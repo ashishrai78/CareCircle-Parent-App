@@ -228,12 +228,16 @@ class NotificationsController extends GetxController {
     // Get.to(() => NotificationDetailScreen(notification: notification));
   }
 
-  /// Open date picker
+  /// Open date picker (Restricted to last 7 days)
   Future<void> pickDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final firstDate7 = today.subtract(const Duration(days: 6));
+
     final picked = await showDatePicker(
       context: Get.context!,
-      initialDate: selectedDate.value,
-      firstDate: DateTime(2024, 1, 1),
+      initialDate: selectedDate.value.isBefore(firstDate7) ? today : selectedDate.value,
+      firstDate: firstDate7,
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(

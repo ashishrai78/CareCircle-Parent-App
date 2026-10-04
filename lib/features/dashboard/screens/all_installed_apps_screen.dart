@@ -60,10 +60,6 @@ class _AllInstalledAppsScreenState extends State<AllInstalledAppsScreen> {
                 : 'Sort by install date (newest)',
             onPressed: controller.toggleSortBy,
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: controller.refreshData,
-          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(120),
@@ -101,17 +97,13 @@ class _AllInstalledAppsScreenState extends State<AllInstalledAppsScreen> {
           return _buildEmptyState();
         }
 
-        return RefreshIndicator(
-          color: UColors.primary,
-          onRefresh: controller.refreshData,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(USizes.md),
-            itemCount: controller.filteredApps.length,
-            itemBuilder: (context, index) {
-              final app = controller.filteredApps[index];
-              return _buildAppCard(context, app, controller);
-            },
-          ),
+        return ListView.builder(
+          padding: const EdgeInsets.all(USizes.md),
+          itemCount: controller.filteredApps.length,
+          itemBuilder: (context, index) {
+            final app = controller.filteredApps[index];
+            return _buildAppCard(context, app, controller);
+          },
         );
       }),
     );

@@ -30,7 +30,6 @@ class USizes {
   static const double fontSizeDisplay = 32.0;
 
   // ============ BUTTON SIZES ============
-  /// ✅ FIX: Increased from 18.0 → 52.0 (Material Design minimum is 48.0)
   static const double buttonHeight = 52.0;
 
   /// Button width — used for fixed-width buttons

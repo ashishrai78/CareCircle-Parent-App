@@ -5,13 +5,7 @@ import 'package:get/get.dart';
 import '../popups/snackbars.dart';
 import 'package:flutter/material.dart' show IconData, Icons;
 
-/// 🌐 CareCircle — Production Network Manager
-///
-/// Monitors network connectivity and provides:
-///  - Real-time connection state (reactive)
-///  - Reconnect notifications
-///  - API call guarding (blocks calls when offline)
-///  - Stream of connectivity changes
+
 class NetworkManager extends GetxController {
   static NetworkManager get instance => Get.find();
 

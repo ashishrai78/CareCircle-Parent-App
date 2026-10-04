@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
+import '../../contact/screens/call_logs_screen.dart';
 import '../../liveaudio/sound_listener_screen.dart';
 import '../../notification/screens/notifications_screen.dart';
 import '../controller/parent_dashboard_controller.dart';
@@ -57,15 +58,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     super.dispose();
   }
 
-  void _refreshAll() {
-    if (Get.isRegistered<ParentDashboardController>()) {
-      final controller = Get.find<ParentDashboardController>();
-      controller.deviceInfoController.refreshData();
-      controller.screenTimeController.refreshData();
-      controller.installedAppsController.refreshData();
-    }
-  }
-
   void _navigateToSoundListener() {
     // 👇 Direct navigation — uncomment + update class name as per your code
      Get.to(() => SoundListenerScreen(childUid: widget.childUid,));
@@ -112,35 +104,35 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             tooltip: 'Listen to surroundings',
             onPressed: _navigateToSoundListener,
           ),
+
+          // Call Logs button
+          IconButton(
+            onPressed: () => Get.to(() => CallLogsScreen(
+              childUid: widget.childUid,
+              childName: widget.childName,
+            )),
+            icon: Icon(Icons.phone),
+          ),
           const SizedBox(width: USizes.xs),
         ],
       ),
-      body: RefreshIndicator(
-        color: UColors.primary,
-        onRefresh: () async {
-          _refreshAll();
-          // Wait a bit for visual feedback
-          await Future.delayed(const Duration(seconds: 1));
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: USizes.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Device info (battery + location)
-              DeviceInfoCard(childUid: widget.childUid),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: USizes.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Device info (battery + location)
+            DeviceInfoCard(childUid: widget.childUid),
 
-              // Current App Active Card
-              CurrentAppActiveCard(childUid: widget.childUid,),
+            // Current App Active Card
+            CurrentAppActiveCard(childUid: widget.childUid,),
 
-              // Screen time breakdown
-              ScreenTimeCard(childUid: widget.childUid),
+            // Screen time breakdown
+            ScreenTimeCard(childUid: widget.childUid),
 
-              // Installed apps preview
-              InstalledAppsSection(childUid: widget.childUid,),
-            ],
-          ),
+            // Installed apps preview
+            InstalledAppsSection(childUid: widget.childUid,),
+          ],
         ),
       ),
     );

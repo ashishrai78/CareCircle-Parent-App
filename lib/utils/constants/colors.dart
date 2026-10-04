@@ -1,12 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 🎨 CareCircle — Production Color Palette
-///
-/// Warm orange primary (trustworthy + friendly for parental app)
-/// Trust blue accent (links, info, secondary actions)
-/// Semantic colors for success/warning/error/info
-///
-/// All colors are WCAG AA compliant for text readability.
 class UColors {
   UColors._();
 

@@ -58,6 +58,9 @@ class SoundListenerController extends GetxController {
   /// Status label for UI
   final RxString statusLabel = 'Initializing...'.obs;
 
+  /// Child mic state from child_control (streaming, connecting, healing_1..3, blocked_*)
+  final RxString micState = ''.obs;
+
   /// Elapsed time (in seconds) since connection established
   final RxInt elapsedSeconds = 0.obs;
 
@@ -153,11 +156,38 @@ class SoundListenerController extends GetxController {
       debugPrint('SoundListener: ✅ Wrote sync_mic=true + call_id');
 
       // Listen to child_control for state changes
-      _controlSub = _repository.streamChildControl(childUid).listen((data) {
+      _controlSub = _repository.streamChildControl(childUid).listen((data) async {
         if (data == null) return;
-        // If child clears sync_mic (e.g., user revoked mic permission)
+
+        // A) Real mic status UI
+        final childMicState = data['mic_state'] as String?;
+        if (childMicState != null && childMicState.isNotEmpty) {
+          _updateMicStateUI(childMicState);
+        }
+
+        // If child clears sync_mic (e.g., user revoked mic permission or stopped)
         if (data['sync_mic'] == false && isListening.value) {
           _onError('Child device stopped the mic stream.');
+          return;
+        }
+
+        // B) Auto-heal: Check if child changed call_id (e.g., xxx -> xxx-h1)
+        final syncMic = data['sync_mic'] == true;
+        final newCallId = data['call_id'] as String?;
+        if (syncMic &&
+            newCallId != null &&
+            newCallId.isNotEmpty &&
+            newCallId != _currentCallId) {
+          debugPrint('SoundListener: 🔄 Child auto-healed call_id: $_currentCallId -> $newCallId');
+          _currentCallId = newCallId;
+          statusLabel.value = 'Re-establishing audio session...';
+          isConnecting.value = true;
+          try {
+            await _receiver.start(newCallId);
+          } catch (e) {
+            debugPrint('SoundListener: ❌ Failed to restart receiver on heal: $e');
+            _onError('Failed to reconnect after mic recovery: $e');
+          }
         }
       });
 
@@ -209,6 +239,7 @@ class SoundListenerController extends GetxController {
 
     // Reset state
     _currentCallId = null;
+    micState.value = '';
     isListening.value = false;
     isConnecting.value = false;
     isPreparing.value = false;
@@ -240,7 +271,16 @@ class SoundListenerController extends GetxController {
 
   void _onConnectionStateChanged(WebRTCConnectionState state) {
     connectionState.value = state;
-    statusLabel.value = state.label;
+
+    if (micState.value == 'streaming') {
+      statusLabel.value = 'Listening live';
+    } else if (micState.value.startsWith('healing_')) {
+      final attempt = micState.value.split('_').last;
+      statusLabel.value = 'Recovering mic... (Attempt $attempt/3)';
+    } else {
+      statusLabel.value = state.label;
+    }
+
     isConnecting.value = state.isTransient;
     isListening.value = state == WebRTCConnectionState.connected;
 
@@ -282,6 +322,58 @@ class SoundListenerController extends GetxController {
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       elapsedSeconds.value++;
     });
+  }
+
+  void _updateMicStateUI(String state) {
+    if (state.isEmpty) return;
+    micState.value = state;
+    debugPrint('SoundListener: 📊 Child mic_state = $state');
+
+    switch (state) {
+      case 'streaming':
+        statusLabel.value = 'Listening live';
+        isConnecting.value = false;
+        isListening.value = true;
+        hasError.value = false;
+        break;
+      case 'connecting':
+        statusLabel.value = 'Connecting to child device...';
+        isConnecting.value = true;
+        break;
+      case 'healing_1':
+      case 'healing_2':
+      case 'healing_3':
+        final attempt = state.split('_').last;
+        statusLabel.value = 'Recovering mic... (Attempt $attempt/3)';
+        isConnecting.value = true;
+        break;
+      case 'blocked_fgs_type':
+        statusLabel.value = 'Mic blocked by OS';
+        _onError(
+          'Microphone was blocked by Android system restrictions. '
+          'Please open the CareCircle child app once on child\'s phone.',
+        );
+        break;
+      case 'blocked_silent':
+        statusLabel.value = 'Mic silent (Blocked)';
+        _onError(
+          'Microphone returned silent audio. '
+          'Please open the CareCircle child app once to reactivate.',
+        );
+        break;
+      case 'blocked_no_permission':
+        statusLabel.value = 'Mic permission denied';
+        _onError('Microphone permission has been revoked on child device.');
+        break;
+      case 'stopped':
+        if (isSessionActive) {
+          statusLabel.value = 'Stopped by child device';
+          _onError('Child device stopped the mic stream.');
+        }
+        break;
+      default:
+        break;
+    }
   }
 
   // ============ COMPUTED GETTERS ============

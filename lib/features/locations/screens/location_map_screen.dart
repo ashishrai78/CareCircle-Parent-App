@@ -78,11 +78,6 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: controller.refreshData,
-          ),
-          IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'View History',
             onPressed: () {
@@ -272,13 +267,9 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
 
     // Location is OFF
     if (controller.isLocationOff) {
-      final cellInfo = loc.cellInfo;
-      final msg = cellInfo != null
-          ? 'Location is OFF — Network: ${cellInfo.operatorName}'
-          : 'Location is OFF on child device';
       return _buildBanner(
         icon: Icons.location_off,
-        message: msg,
+        message: 'Location is OFF on child device',
         color: UColors.error,
         action: ElevatedButton(
           onPressed: controller.refreshData,
@@ -290,15 +281,6 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
           ),
           child: const Text('Request', style: TextStyle(fontSize: 11)),
         ),
-      );
-    }
-
-    // Approximate location (cell tower resolved)
-    if (controller.isApproximate) {
-      return _buildBanner(
-        icon: Icons.cell_tower,
-        message: 'Approximate location (±5 km) — GPS unavailable',
-        color: UColors.warning,
       );
     }
 
@@ -413,7 +395,6 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
 
   Widget _buildLocationDetailsSheet() {
     final loc = controller.liveLocation.value!;
-    final showCellInfo = loc.cellInfo != null;
 
     return URoundedContainer(
       margin: const EdgeInsets.all(USizes.md),
@@ -529,12 +510,6 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
             ],
           ),
 
-          // 🔥 Cell tower info (if available)
-          if (showCellInfo) ...[
-            const SizedBox(height: USizes.md),
-            _buildCellInfoSection(loc.cellInfo!),
-          ],
-
           const SizedBox(height: USizes.md),
 
           // Action buttons
@@ -566,74 +541,6 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 🔥 Cell tower info section — shown when location source is cell tower
-  Widget _buildCellInfoSection(CellInfo cellInfo) {
-    return URoundedContainer(
-      padding: const EdgeInsets.all(USizes.sm),
-      color: UColors.warning.withValues(alpha: 0.05),
-      border: true,
-      borderColor: UColors.warning.withValues(alpha: 0.2),
-      borderRadius: USizes.cardRadiusMd,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.cell_tower, size: 14, color: UColors.warning),
-              const SizedBox(width: USizes.xs),
-              const Text(
-                'Cell Tower Info',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: UColors.warning,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: USizes.xs),
-          _buildInfoRow('Network', cellInfo.operatorName),
-          _buildInfoRow('Type', cellInfo.cellType),
-          _buildInfoRow('Signal', '${cellInfo.signalStrength} dBm (${cellInfo.signalLabel})'),
-          _buildInfoRow('Tower ID', cellInfo.cellId.toString()),
-          if (cellInfo.note != null)
-            _buildInfoRow('Note', cellInfo.note!),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 70,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: UColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: UColors.textPrimary,
-              ),
-            ),
           ),
         ],
       ),
@@ -687,31 +594,21 @@ class _LocationMapScreenState extends State<LocationMapScreen> {
 
   // ============ 🔥 HELPERS ============
 
-  /// Get provider color based on location type
   Color _getProviderColor(LocationType type) {
     switch (type) {
       case LocationType.gps:
-        return UColors.accent;          // Blue
-      case LocationType.cellTowerResolved:
-        return UColors.warning;         // Yellow
-      case LocationType.cellTowerBasic:
-        return UColors.error;           // Red
+        return UColors.accent;
       case LocationType.cached:
-        return UColors.info;            // Purple
+        return UColors.info;
       case LocationType.unknown:
         return UColors.textTertiary;
     }
   }
 
-  /// Get provider icon based on location type
   IconData _getProviderIcon(LocationType type) {
     switch (type) {
       case LocationType.gps:
         return Icons.gps_fixed;
-      case LocationType.cellTowerResolved:
-        return Icons.cell_tower;
-      case LocationType.cellTowerBasic:
-        return Icons.signal_cellular_4_bar;
       case LocationType.cached:
         return Icons.history;
       case LocationType.unknown:

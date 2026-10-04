@@ -405,10 +405,14 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
   }
 
   Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final firstDate7 = today.subtract(const Duration(days: 6));
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2024, 1, 1),
+      initialDate: today,
+      firstDate: firstDate7,
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
