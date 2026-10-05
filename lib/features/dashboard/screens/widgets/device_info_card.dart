@@ -11,7 +11,7 @@ import '../../controller/child_deviceinfo_controller.dart';
 
 /// 💻 DeviceInfoCard — top card showing battery + location + device info
 class DeviceInfoCard extends StatelessWidget {
-  const DeviceInfoCard({required this.childUid});
+  const DeviceInfoCard({super.key, required this.childUid});
 
   final String childUid;
 
@@ -70,15 +70,26 @@ class DeviceInfoCard extends StatelessWidget {
             ],
           ),
 
+          const SizedBox(height: USizes.md),
+
+          // 🆕 Quick device status row: Ringer Mode | Screen Status | Network
+          _buildQuickStatusRow(controller),
+
           // Charging indicator
           if (controller.isCharging) ...[
-            const SizedBox(height: USizes.sm),
+            const SizedBox(height: USizes.xs),
             _buildChargingBadge(),
+          ],
+
+          // Battery Saver indicator
+          if (controller.isPowerSaveMode) ...[
+            const SizedBox(height: USizes.xs),
+            _buildPowerSaveBadge(),
           ],
 
           // Mock location warning
           if (controller.isMockLocation) ...[
-            const SizedBox(height: USizes.sm),
+            const SizedBox(height: USizes.xs),
             _buildMockLocationWarning(),
           ],
         ],
@@ -367,6 +378,143 @@ class DeviceInfoCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: UColors.warning,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPowerSaveBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: USizes.md,
+        vertical: USizes.xs,
+      ),
+      decoration: BoxDecoration(
+        color: UColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(USizes.borderRadiusCircular),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.energy_savings_leaf, size: 14, color: UColors.warning),
+          SizedBox(width: USizes.xs),
+          Text(
+            'Battery Saver is ON (Updates may delay)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: UColors.warning,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatusRow(ChildDeviceInfoController controller) {
+    // Ringer Mode
+    final IconData ringerIcon;
+    final Color ringerColor;
+    final String ringerLabel;
+    if (controller.isPhoneSilent) {
+      ringerIcon = Icons.notifications_off_rounded;
+      ringerColor = UColors.error;
+      ringerLabel = 'Silent';
+    } else if (controller.isPhoneVibrate) {
+      ringerIcon = Icons.vibration_rounded;
+      ringerColor = const Color(0xFF8B5CF6);
+      ringerLabel = 'Vibrate';
+    } else {
+      ringerIcon = Icons.notifications_active_rounded;
+      ringerColor = UColors.primary;
+      ringerLabel = 'Sound On';
+    }
+
+    // Network Status
+    final String netType = controller.networkType.toUpperCase();
+    final IconData netIcon = netType == 'WIFI'
+        ? Icons.wifi_rounded
+        : (netType == 'CELLULAR'
+            ? Icons.network_cell_rounded
+            : Icons.signal_cellular_connected_no_internet_4_bar_rounded);
+    final String netLabel = netType == 'WIFI'
+        ? 'Wi-Fi'
+        : (netType == 'CELLULAR' ? 'Mobile' : 'No Net');
+    final Color netColor =
+        controller.hasInternet ? UColors.primary : UColors.error;
+
+    return Row(
+      children: [
+        // Ringer mode chip
+        Expanded(
+          child: _buildStatusChip(
+            icon: ringerIcon,
+            label: ringerLabel,
+            color: ringerColor,
+          ),
+        ),
+        const SizedBox(width: USizes.xs),
+
+        // Screen active chip
+        Expanded(
+          child: _buildStatusChip(
+            icon: controller.isScreenOn
+                ? Icons.phone_android_rounded
+                : Icons.screen_lock_portrait_rounded,
+            label: controller.screenStatusText,
+            color:
+                controller.isScreenOn ? UColors.success : UColors.textSecondary,
+          ),
+        ),
+        const SizedBox(width: USizes.xs),
+
+        // Network chip
+        Expanded(
+          child: _buildStatusChip(
+            icon: netIcon,
+            label: netLabel,
+            color: netColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: USizes.xs,
+        vertical: USizes.xs + 2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(USizes.borderRadiusMd),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
