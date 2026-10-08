@@ -154,6 +154,8 @@ class ScreenTimeController extends GetxController {
 
   int get sessionCount => screenTime.value.sessionCount;
 
+  int get totalOpenCount => screenTime.value.openCount;
+
   String get selectedDateFormatted =>
       DateFormat('dd-MM-yyyy').format(selectedDate.value);
 

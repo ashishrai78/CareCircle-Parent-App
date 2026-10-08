@@ -286,6 +286,7 @@ class ScreenTimeCard extends StatelessWidget {
           timeFormatted: controller.formatTime(app.totalTimeMs),
           percentage: percentage,
           sessions: app.sessions,
+          openCount: app.openCount,
         );
       },
     );
@@ -298,6 +299,7 @@ class ScreenTimeCard extends StatelessWidget {
     required String timeFormatted,
     required double percentage,
     required int sessions,
+    int openCount = 0,
   }) {
     return URoundedContainer(
       padding: const EdgeInsets.all(USizes.sm),
@@ -336,7 +338,9 @@ class ScreenTimeCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
                       children: [
                         Text(
                           timeFormatted,
@@ -345,8 +349,7 @@ class ScreenTimeCard extends StatelessWidget {
                             color: UColors.textSecondary,
                           ),
                         ),
-                        if (sessions > 0) ...[
-                          const SizedBox(width: USizes.xs),
+                        if (sessions > 0)
                           Text(
                             '• $sessions sessions',
                             style: TextStyle(
@@ -354,7 +357,25 @@ class ScreenTimeCard extends StatelessWidget {
                               color: UColors.textTertiary,
                             ),
                           ),
-                        ],
+                        if (openCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: UColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Opened $openCount ${openCount == 1 ? "time" : "times"}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: UColors.primary,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],

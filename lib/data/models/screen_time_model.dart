@@ -5,6 +5,7 @@ class ScreenTimeModel {
   final String dateKey;
   final int totalTimeMs;
   final int sessionCount;
+  final int openCount; // 🔥 Total times apps were opened today
   final Map<String, AppUsageModel> apps;
   final Map<int, int> hourlyBreakdown; // 0-23 → ms
   final DateTime? updatedAt;
@@ -13,6 +14,7 @@ class ScreenTimeModel {
     required this.dateKey,
     required this.totalTimeMs,
     required this.sessionCount,
+    this.openCount = 0,
     required this.apps,
     required this.hourlyBreakdown,
     this.updatedAt,
@@ -47,6 +49,9 @@ class ScreenTimeModel {
       dateKey: dateKey,
       totalTimeMs: (data['totalTime'] as num?)?.toInt() ?? 0,
       sessionCount: (data['sessionCount'] as num?)?.toInt() ?? 0,
+      openCount: (data['openCount'] as num?)?.toInt() ??
+          (data['totalOpenCount'] as num?)?.toInt() ??
+          0,
       apps: apps,
       hourlyBreakdown: hourly,
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -59,6 +64,7 @@ class ScreenTimeModel {
       dateKey: dateKey,
       totalTimeMs: 0,
       sessionCount: 0,
+      openCount: 0,
       apps: {},
       hourlyBreakdown: {for (var i = 0; i < 24; i++) i: 0},
     );
@@ -121,6 +127,7 @@ class ScreenTimeModel {
 class AppUsageModel {
   final int totalTimeMs;
   final int sessions;
+  final int openCount; // 🔥 Number of times this app was opened
   final int? firstUsed; // Unix ms
   final int? lastUsed; // Unix ms
   String packageName; // Set by parent
@@ -128,6 +135,7 @@ class AppUsageModel {
   AppUsageModel({
     required this.totalTimeMs,
     this.sessions = 0,
+    this.openCount = 0,
     this.firstUsed,
     this.lastUsed,
     this.packageName = '',
@@ -137,6 +145,10 @@ class AppUsageModel {
     return AppUsageModel(
       totalTimeMs: (data['totalTime'] as num?)?.toInt() ?? 0,
       sessions: (data['sessions'] as num?)?.toInt() ?? 0,
+      openCount: (data['openCount'] as num?)?.toInt() ??
+          (data['launchCount'] as num?)?.toInt() ??
+          (data['timesOpened'] as num?)?.toInt() ??
+          0,
       firstUsed: (data['firstUsed'] as num?)?.toInt(),
       lastUsed: (data['lastUsed'] as num?)?.toInt(),
     );
@@ -150,4 +162,8 @@ class AppUsageModel {
     if (minutes > 0) return '${minutes}m';
     return '<1m';
   }
+
+  /// Format open count as "X open" or "X opens"
+  String get openCountFormatted =>
+      '$openCount ${openCount == 1 ? "open" : "opens"}';
 }

@@ -54,19 +54,21 @@ class ChildDeviceInfoController extends GetxController {
       await _repository.requestSync(childUid);
 
       // Listen to live data
-      _subscription = _repository.streamChildLiveData(childUid).listen(
-        (data) {
-          childData.value = data;
-          error.value = '';
-          isLoading.value = false;
-          isRefreshing.value = false;
-        },
-        onError: (err) {
-          error.value = 'Error loading data: $err';
-          isLoading.value = false;
-          isRefreshing.value = false;
-        },
-      );
+      _subscription = _repository
+          .streamChildLiveData(childUid)
+          .listen(
+            (data) {
+              childData.value = data;
+              error.value = '';
+              isLoading.value = false;
+              isRefreshing.value = false;
+            },
+            onError: (err) {
+              error.value = 'Error loading data: $err';
+              isLoading.value = false;
+              isRefreshing.value = false;
+            },
+          );
     } catch (e) {
       error.value = 'Failed to connect: $e';
       isLoading.value = false;
