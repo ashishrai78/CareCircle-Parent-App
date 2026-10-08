@@ -54,19 +54,21 @@ class ChildDeviceInfoController extends GetxController {
       await _repository.requestSync(childUid);
 
       // Listen to live data
-      _subscription = _repository.streamChildLiveData(childUid).listen(
-        (data) {
-          childData.value = data;
-          error.value = '';
-          isLoading.value = false;
-          isRefreshing.value = false;
-        },
-        onError: (err) {
-          error.value = 'Error loading data: $err';
-          isLoading.value = false;
-          isRefreshing.value = false;
-        },
-      );
+      _subscription = _repository
+          .streamChildLiveData(childUid)
+          .listen(
+            (data) {
+              childData.value = data;
+              error.value = '';
+              isLoading.value = false;
+              isRefreshing.value = false;
+            },
+            onError: (err) {
+              error.value = 'Error loading data: $err';
+              isLoading.value = false;
+              isRefreshing.value = false;
+            },
+          );
     } catch (e) {
       error.value = 'Failed to connect: $e';
       isLoading.value = false;
@@ -135,17 +137,27 @@ class ChildDeviceInfoController extends GetxController {
 
   String? get address => data?.address;
 
-  bool get isMockLocation => data?.isMock ?? false;
-
   // Network
   String get networkType => data?.networkType ?? 'Unknown';
-
-  String get carrier => data?.carrier ?? '';
 
   bool get hasInternet => data?.hasInternet ?? false;
 
   // Device
   String get osVersion => data?.osVersion ?? 'Unknown';
 
-  bool get isRooted => data?.rooted ?? false;
+  // 🆕 Real-world status indicators
+  String get ringerMode => data?.ringerMode ?? 'Normal';
+  bool get isScreenOn => data?.isScreenOn ?? false;
+  bool get isPowerSaveMode => data?.isPowerSaveMode ?? false;
+
+  bool get isPhoneSilent => data?.isPhoneSilent ?? false;
+  bool get isPhoneVibrate => data?.isPhoneVibrate ?? false;
+  bool get isPhoneNormal => data?.isPhoneNormal ?? true;
+
+  String get screenStatusText => isScreenOn ? 'Screen On' : 'Screen Off';
+
+  // Backward compatibility getters
+  bool get isMockLocation => false;
+  String get carrier => '';
+  bool get isRooted => false;
 }

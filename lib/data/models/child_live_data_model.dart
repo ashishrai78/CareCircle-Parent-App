@@ -8,41 +8,25 @@ class ChildLiveDataModel {
   final double? lat;
   final double? lng;
   final double? accuracy;
-  final double? altitude;
   final double? speed;
-  final double? bearing;
   final String? address;
-  final bool? isMock;
   final String? locationProvider;
   final bool? isCached;
   final bool? locationServiceOn;
 
   final int battery;
   final bool isCharging;
-  final double? batteryTemp;
-  final double? batteryVoltage;
-  final String? batteryHealth;
-  final String? powerSource;
 
   final String? networkType;
-  final String? carrier;
-  final String? wifiSsid;
-  final String? ip;
   final bool hasInternet;
 
   final String? device;
   final String? osVersion;
-  final int? sdkVersion;
-  final String? buildNumber;
-  final String? androidId;
-  final bool rooted;
 
-  final int? storageTotalMB;
-  final int? storageAvailableMB;
-  final int? storageUsedPct;
-  final int? ramTotalMB;
-  final int? ramAvailableMB;
-  final int? ramUsedPct;
+  // 🆕 Essential status indicators for parents
+  final String ringerMode; // 'Normal', 'Vibrate', 'Silent'
+  final bool isScreenOn;
+  final bool isPowerSaveMode;
 
   final DateTime? heartbeat;
   final DateTime? timestamp;
@@ -53,42 +37,24 @@ class ChildLiveDataModel {
   final bool currentAppIsSystem;
   final int? currentAppSecondsAgo;
 
-
   ChildLiveDataModel({
     this.lat,
     this.lng,
     this.accuracy,
-    this.altitude,
     this.speed,
-    this.bearing,
     this.address,
-    this.isMock,
     this.locationProvider,
     this.isCached,
     this.locationServiceOn,
     required this.battery,
     required this.isCharging,
-    this.batteryTemp,
-    this.batteryVoltage,
-    this.batteryHealth,
-    this.powerSource,
     this.networkType,
-    this.carrier,
-    this.wifiSsid,
-    this.ip,
     required this.hasInternet,
     this.device,
     this.osVersion,
-    this.sdkVersion,
-    this.buildNumber,
-    this.androidId,
-    required this.rooted,
-    this.storageTotalMB,
-    this.storageAvailableMB,
-    this.storageUsedPct,
-    this.ramTotalMB,
-    this.ramAvailableMB,
-    this.ramUsedPct,
+    this.ringerMode = 'Normal',
+    this.isScreenOn = false,
+    this.isPowerSaveMode = false,
     this.heartbeat,
     this.timestamp,
     required this.serviceAlive,
@@ -104,45 +70,28 @@ class ChildLiveDataModel {
       lat: _toDouble(data['lat']),
       lng: _toDouble(data['lng']),
       accuracy: _toDouble(data['accuracy']),
-      altitude: _toDouble(data['altitude']),
       speed: _toDouble(data['speed']),
-      bearing: _toDouble(data['bearing']),
       address: data['address'] as String?,
-      isMock: data['isMock'] as bool?,
-      locationProvider: data['locationProvider'] as String?,
+      locationProvider: (data['locationProvider'] ?? data['provider']) as String?,
       isCached: data['isCached'] as bool?,
       locationServiceOn: data['locationServiceOn'] as bool?,
 
       // Battery
       battery: (data['battery'] as num?)?.toInt() ?? 0,
       isCharging: data['isCharging'] as bool? ?? false,
-      batteryTemp: _toDouble(data['batteryTemp']),
-      batteryVoltage: _toDouble(data['batteryVoltage']),
-      batteryHealth: data['batteryHealth'] as String?,
-      powerSource: data['powerSource'] as String?,
 
       // Network
       networkType: data['networkType'] as String?,
-      carrier: data['carrier'] as String?,
-      wifiSsid: data['wifiSsid'] as String?,
-      ip: data['ip'] as String?,
       hasInternet: data['hasInternet'] as bool? ?? false,
 
       // Device
       device: data['device'] as String?,
       osVersion: data['osVersion'] as String?,
-      sdkVersion: (data['sdkVersion'] as num?)?.toInt(),
-      buildNumber: data['buildNumber'] as String?,
-      androidId: data['androidId'] as String?,
-      rooted: data['rooted'] as bool? ?? false,
 
-      // Storage & Memory
-      storageTotalMB: (data['storageTotalMB'] as num?)?.toInt(),
-      storageAvailableMB: (data['storageAvailableMB'] as num?)?.toInt(),
-      storageUsedPct: (data['storageUsedPct'] as num?)?.toInt(),
-      ramTotalMB: (data['ramTotalMB'] as num?)?.toInt(),
-      ramAvailableMB: (data['ramAvailableMB'] as num?)?.toInt(),
-      ramUsedPct: (data['ramUsedPct'] as num?)?.toInt(),
+      // 🆕 Status indicators
+      ringerMode: data['ringerMode'] as String? ?? 'Normal',
+      isScreenOn: data['isScreenOn'] as bool? ?? false,
+      isPowerSaveMode: data['isPowerSaveMode'] as bool? ?? false,
 
       // Status
       heartbeat: (data['heartbeat'] as Timestamp?)?.toDate(),
@@ -162,15 +111,15 @@ class ChildLiveDataModel {
       'lat': lat,
       'lng': lng,
       'accuracy': accuracy,
-      'altitude': altitude,
       'speed': speed,
-      'bearing': bearing,
       'address': address,
-      'isMock': isMock,
       'battery': battery,
       'isCharging': isCharging,
       'networkType': networkType,
       'device': device,
+      'ringerMode': ringerMode,
+      'isScreenOn': isScreenOn,
+      'isPowerSaveMode': isPowerSaveMode,
       'heartbeat': heartbeat != null ? Timestamp.fromDate(heartbeat!) : null,
       'timestamp': timestamp != null ? Timestamp.fromDate(timestamp!) : null,
       'serviceAlive': serviceAlive,
@@ -216,6 +165,11 @@ class ChildLiveDataModel {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
   }
+
+  // 🆕 Sound & Status Helpers
+  bool get isPhoneSilent => ringerMode.toLowerCase() == 'silent';
+  bool get isPhoneVibrate => ringerMode.toLowerCase() == 'vibrate';
+  bool get isPhoneNormal => !isPhoneSilent && !isPhoneVibrate;
 
   static double? _toDouble(dynamic value) {
     if (value == null) return null;

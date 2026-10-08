@@ -57,6 +57,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     }
     super.dispose();
   }
+  
+    void _refreshAll() {
+    if (Get.isRegistered<ParentDashboardController>()) {
+      final controller = Get.find<ParentDashboardController>();
+      controller.deviceInfoController.refreshData();
+      controller.screenTimeController.refreshData();
+    }
+  }
 
   void _navigateToSoundListener() {
     // 👇 Direct navigation — uncomment + update class name as per your code
@@ -116,23 +124,32 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           const SizedBox(width: USizes.xs),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: USizes.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Device info (battery + location)
-            DeviceInfoCard(childUid: widget.childUid),
+      body:  RefreshIndicator(
+        color: UColors.primary,
+        onRefresh: () async {
+          _refreshAll();
+          // Wait a bit for visual feedback
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: USizes.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Device info (battery + location)
+              DeviceInfoCard(childUid: widget.childUid),
 
-            // Current App Active Card
-            CurrentAppActiveCard(childUid: widget.childUid,),
+              // Current App Active Card
+              CurrentAppActiveCard(childUid: widget.childUid,),
 
-            // Screen time breakdown
-            ScreenTimeCard(childUid: widget.childUid),
+              // Screen time breakdown
+              ScreenTimeCard(childUid: widget.childUid),
 
-            // Installed apps preview
-            InstalledAppsSection(childUid: widget.childUid,),
-          ],
+              // Installed apps preview
+              InstalledAppsSection(childUid: widget.childUid,),
+            ],
+          ),
         ),
       ),
     );
