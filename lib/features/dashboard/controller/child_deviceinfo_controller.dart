@@ -34,6 +34,7 @@ class ChildDeviceInfoController extends GetxController {
 
   int get currentAppSecondsAgo => data?.currentAppSecondsAgo ?? 0;
   StreamSubscription<ChildLiveDataModel?>? _subscription;
+  static DateTime? _lastAutoSyncTime;
 
   @override
   void onInit() {
@@ -47,12 +48,9 @@ class ChildDeviceInfoController extends GetxController {
     super.onClose();
   }
 
-  /// Initialize real-time stream + request fresh data
+  /// Initialize real-time stream + smart auto-sync
   Future<void> _initStream() async {
     try {
-      // Request fresh data from child
-      await _repository.requestSync(childUid);
-
       // Listen to live data
       _subscription = _repository
           .streamChildLiveData(childUid)
@@ -69,10 +67,24 @@ class ChildDeviceInfoController extends GetxController {
               isRefreshing.value = false;
             },
           );
+
+      // 🔥 Smart Auto-Sync: Automatically request fresh data when parent opens app!
+      // Throttled to once every 2 minutes so it never spams reads/writes.
+      _autoSyncIfStale();
     } catch (e) {
       error.value = 'Failed to connect: $e';
       isLoading.value = false;
       isRefreshing.value = false;
+    }
+  }
+
+  /// Automatically requests fresh data from child device if not synced recently
+  void _autoSyncIfStale() {
+    final now = DateTime.now();
+    if (_lastAutoSyncTime == null ||
+        now.difference(_lastAutoSyncTime!) > const Duration(minutes: 2)) {
+      _lastAutoSyncTime = now;
+      _repository.requestSync(childUid).catchError((_) {});
     }
   }
 

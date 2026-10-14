@@ -17,7 +17,9 @@ class DeviceInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ChildDeviceInfoController(childUid: childUid));
+    final controller = Get.isRegistered<ChildDeviceInfoController>(tag: 'dashboard_$childUid')
+        ? Get.find<ChildDeviceInfoController>(tag: 'dashboard_$childUid')
+        : Get.put(ChildDeviceInfoController(childUid: childUid), tag: 'dashboard_$childUid');
 
     return Padding(
       padding: const EdgeInsets.symmetric(

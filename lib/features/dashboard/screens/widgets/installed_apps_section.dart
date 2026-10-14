@@ -14,7 +14,9 @@ class InstalledAppsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(InstalledAppsController(childUid: childUid));
+    final controller = Get.isRegistered<InstalledAppsController>(tag: 'dashboard_$childUid')
+        ? Get.find<InstalledAppsController>(tag: 'dashboard_$childUid')
+        : Get.put(InstalledAppsController(childUid: childUid), tag: 'dashboard_$childUid');
 
     return Padding(
       padding: const EdgeInsets.symmetric(

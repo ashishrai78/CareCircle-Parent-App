@@ -12,7 +12,9 @@ class ScreenTimeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ScreenTimeController(childUid: childUid));
+    final controller = Get.isRegistered<ScreenTimeController>(tag: 'dashboard_$childUid')
+        ? Get.find<ScreenTimeController>(tag: 'dashboard_$childUid')
+        : Get.put(ScreenTimeController(childUid: childUid), tag: 'dashboard_$childUid');
 
     return Padding(
       padding: const EdgeInsets.symmetric(
