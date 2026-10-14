@@ -46,7 +46,7 @@ class CallLogController extends GetxController {
   }
 
   void _initStream() {
-    _logsSub = _repository.streamCallLogs(childUid, limit: 300).listen(
+    _logsSub = _repository.streamCallLogs(childUid, limit: 150).listen(
       (data) {
         allLogs.value = data;
         _applyFilters();

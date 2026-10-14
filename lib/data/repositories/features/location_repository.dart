@@ -70,7 +70,7 @@ class LocationRepository {
         .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
         .where('timestamp', isLessThan: endOfDay)
         .orderBy('timestamp', descending: true)
-        .limit(200)
+        .limit(150)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => LocationModel.fromHistory(

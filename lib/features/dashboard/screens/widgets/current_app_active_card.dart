@@ -13,7 +13,9 @@ class CurrentAppActiveCard extends StatelessWidget {
   final String childUid;
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ChildDeviceInfoController(childUid: childUid));
+    final controller = Get.isRegistered<ChildDeviceInfoController>(tag: 'dashboard_$childUid')
+        ? Get.find<ChildDeviceInfoController>(tag: 'dashboard_$childUid')
+        : Get.put(ChildDeviceInfoController(childUid: childUid), tag: 'dashboard_$childUid');
     final isUsing = controller.isUsingApp;
     final appName = controller.data?.currentAppName;
     final secondsAgo = controller.data?.currentAppSecondsAgo ?? 0;

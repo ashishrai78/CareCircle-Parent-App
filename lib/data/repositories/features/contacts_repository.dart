@@ -7,12 +7,13 @@ class ContactsRepository {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Stream<List<ContactModel>> streamContacts(String childUid) {
+  Stream<List<ContactModel>> streamContacts(String childUid, {int limit = 500}) {
     return _firestore
         .collection(_collection)
         .doc(childUid)
         .collection(_subCollection)
         .orderBy('displayName')
+        .limit(limit)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => ContactModel.fromMap(
