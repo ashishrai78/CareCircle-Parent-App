@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../common/widgets/custom_shape/roundedBorder_container.dart';
+import '../../../common/widgets/images/app_icon_widget.dart';
 import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
 import '../controller/installed_apps_controller.dart';
@@ -250,14 +251,13 @@ class _AllInstalledAppsScreenState extends State<AllInstalledAppsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // App icon
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: categoryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(USizes.borderRadiusMd),
-              ),
-              child: Icon(categoryIcon, color: categoryColor, size: 26),
+            AppIconWidget(
+              packageName: app.packageName,
+              appName: app.name,
+              category: app.category,
+              size: 48,
+              iconUrl: app.iconUrl,
+              iconBytes: app.iconBytes,
             ),
             const SizedBox(width: USizes.sm),
 
@@ -400,14 +400,14 @@ class _AllInstalledAppsScreenState extends State<AllInstalledAppsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // App icon
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(USizes.cardRadiusLg),
-                ),
-                child: Icon(categoryIcon, color: categoryColor, size: 40),
+              AppIconWidget(
+                packageName: app.packageName,
+                appName: app.name,
+                category: app.category,
+                size: 72,
+                borderRadius: USizes.cardRadiusLg,
+                iconUrl: app.iconUrl,
+                iconBytes: app.iconBytes,
               ),
               const SizedBox(height: USizes.md),
 

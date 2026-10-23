@@ -1,9 +1,9 @@
 import 'package:carecircle_parent1/features/dashboard/controller/child_deviceinfo_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 import '../../../../common/widgets/custom_shape/roundedBorder_container.dart';
+import '../../../../common/widgets/images/app_icon_widget.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 
@@ -34,23 +34,30 @@ class CurrentAppActiveCard extends StatelessWidget {
           borderRadius: USizes.cardRadiusMd,
           child: Row(
             children: [
-              // App emoji
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isUsing
-                      ? UColors.primary.withValues(alpha: 0.1)
-                      : UColors.grey,
-                  borderRadius: BorderRadius.circular(USizes.borderRadiusMd),
-                ),
-                child: Center(
-                  child: Text(
-                    controller.data?.currentAppEmoji ?? '😴',
-                    style: const TextStyle(fontSize: 26),
-                  ),
-                ),
-              ),
+              // App icon / emoji
+              (controller.data?.currentAppPackage ?? '').isNotEmpty && isUsing
+                  ? AppIconWidget(
+                      packageName: controller.data!.currentAppPackage!,
+                      appName: appName,
+                      size: 48,
+                    )
+                  : Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isUsing
+                            ? UColors.primary.withValues(alpha: 0.1)
+                            : UColors.grey,
+                        borderRadius:
+                            BorderRadius.circular(USizes.borderRadiusMd),
+                      ),
+                      child: Center(
+                        child: Text(
+                          controller.data?.currentAppEmoji ?? '😴',
+                          style: const TextStyle(fontSize: 26),
+                        ),
+                      ),
+                    ),
               const SizedBox(width: USizes.md),
         
               // Status

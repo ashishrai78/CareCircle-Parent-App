@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../common/widgets/custom_shape/roundedBorder_container.dart';
+import '../../../../common/widgets/images/app_icon_widget.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../controller/screen_time_controller.dart';
@@ -282,6 +283,7 @@ class ScreenTimeCard extends StatelessWidget {
         final icon = controller.getAppIcon(app.packageName);
 
         return _buildAppTile(
+          packageName: app.packageName,
           appName: appName,
           icon: icon,
           color: color,
@@ -295,6 +297,7 @@ class ScreenTimeCard extends StatelessWidget {
   }
 
   Widget _buildAppTile({
+    required String packageName,
     required String appName,
     required IconData icon,
     required Color color,
@@ -314,14 +317,10 @@ class ScreenTimeCard extends StatelessWidget {
           Row(
             children: [
               // App icon
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(USizes.borderRadiusMd),
-                ),
-                child: Icon(icon, color: color, size: 20),
+              AppIconWidget(
+                packageName: packageName,
+                appName: appName,
+                size: 36,
               ),
               const SizedBox(width: USizes.sm),
 
