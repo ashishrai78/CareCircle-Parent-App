@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../common/widgets/custom_shape/roundedBorder_container.dart';
+import '../../../../common/widgets/images/app_icon_widget.dart';
 import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../controller/installed_apps_controller.dart';
@@ -132,18 +133,13 @@ class InstalledAppsSection extends StatelessWidget {
             child: Row(
               children: [
                 // App icon
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(USizes.borderRadiusMd),
-                  ),
-                  child: Icon(
-                    categoryIcon,
-                    color: categoryColor,
-                    size: 22,
-                  ),
+                AppIconWidget(
+                  packageName: app.packageName,
+                  appName: app.name,
+                  category: app.category,
+                  size: 40,
+                  iconUrl: app.iconUrl,
+                  iconBytes: app.iconBytes,
                 ),
                 const SizedBox(width: USizes.sm),
 

@@ -14,40 +14,68 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // 🔹 Used App Icon + Name Channel
+        // 🔹 App Icon + Name Method Channel
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             APP_INFO_CHANNEL
         ).setMethodCallHandler { call, result ->
-            if (call.method == "getAppInfo") {
-                val packageName = call.argument<String>("packageName")
-                if (packageName != null) {
+            val packageName = call.argument<String>("packageName")
+            if (packageName.isNullOrBlank()) {
+                result.error("ERROR", "Package name missing", null)
+                return@setMethodCallHandler
+            }
+
+            when (call.method) {
+                "getAppIcon" -> {
+                    val bytes = getAppIconBytes(packageName)
+                    result.success(bytes)
+                }
+                "getAppInfo" -> {
                     val info = getAppInfo(packageName)
                     result.success(info)
-                } else {
-                    result.error("ERROR", "Package name missing", null)
                 }
-            } else {
-                result.notImplemented()
+                else -> result.notImplemented()
             }
         }
     }
 
-    // 🔹 Used Apps Icon Logic
-    private fun getAppInfo(packageName: String): Map<String, Any> {
+    private fun drawableToBitmap(drawable: android.graphics.drawable.Drawable): Bitmap {
+        if (drawable is BitmapDrawable && drawable.bitmap != null) {
+            return drawable.bitmap
+        }
+        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
+        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
+    }
+
+    private fun getAppIconBytes(packageName: String): ByteArray? {
+        return try {
+            val pm = packageManager
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            val icon = pm.getApplicationIcon(appInfo)
+            val bitmap = drawableToBitmap(icon)
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream)
+            stream.toByteArray()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getAppInfo(packageName: String): Map<String, Any?> {
         return try {
             val pm = packageManager
             val appInfo = pm.getApplicationInfo(packageName, 0)
             val appName = pm.getApplicationLabel(appInfo).toString()
-            val icon = pm.getApplicationIcon(appInfo)
-
-            val stream = ByteArrayOutputStream()
-            val bitmap = (icon as BitmapDrawable).bitmap
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            val iconBytes = getAppIconBytes(packageName) ?: ByteArray(0)
 
             mapOf(
                 "name" to appName,
-                "icon" to stream.toByteArray()
+                "icon" to iconBytes
             )
         } catch (e: Exception) {
             mapOf(
