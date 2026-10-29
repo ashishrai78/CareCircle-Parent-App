@@ -10,6 +10,8 @@ class AppUserModel {
   /// CHILD
   String childCode;
   String parentUid;
+  bool isPaired;
+  Timestamp? lastParentSync;
 
   /// PARENT
   List<String> linkedChildren;
@@ -26,6 +28,8 @@ class AppUserModel {
     this.emailVerified,
     this.createdAt,
     this.lastActive,
+    this.isPaired = false,
+    this.lastParentSync,
     this.childCode = '',
     this.parentUid = '',
     List<String>? linkedChildren,
@@ -38,6 +42,7 @@ class AppUserModel {
     name: '',
     role: '',
     emailVerified: false,
+    isPaired: false,
     createdAt: Timestamp.now(),
     lastActive: Timestamp.now(),
   );
@@ -51,6 +56,8 @@ class AppUserModel {
       'emailVerified': emailVerified,
       'childCode': childCode,
       'parentUid': parentUid,
+      'isPaired': isPaired,
+      'lastParentSync': lastParentSync,
       'linkedChildren': linkedChildren,
       'createdAt': createdAt,
       'lastActive': lastActive,
@@ -71,6 +78,8 @@ class AppUserModel {
       emailVerified: data['emailVerified'] ?? false,
       childCode: data['childCode'] ?? '',
       parentUid: data['parentUid'] ?? '',
+      isPaired: data['isPaired'] ?? false,
+      lastParentSync: data['lastParentSync'] as Timestamp?,
       linkedChildren: List<String>.from(data['linkedChildren'] ?? []),
       createdAt: data['createdAt'] ?? Timestamp.now(),
       lastActive: data['lastActive'] ?? Timestamp.now(),

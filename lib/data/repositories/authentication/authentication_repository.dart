@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:carecircle_parent1/features/binding_device/screens/parent_bind_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,15 +32,40 @@ class AuthenticationRepository extends GetxController{
   void screenRedirect() async{
     if(_auth.currentUser != null){
       if(_auth.currentUser!.emailVerified){
-        // If verify, go to navigation dashboard
-        if(storage.read('isBind') == true){
-          Get.offAll(()=> ParentDashboardScreen(childUid: storage.read('childUid')));
-        }else{
-          Get.offAll(()=> ParentBindScreen(parentUid: currentUser!.uid));
-        }
-
         // initialize user specific box
         await GetStorage.init(currentUser!.uid);
+
+        // Fetch parent details from Firestore to verify linkedChildren
+        try {
+          final doc = await FirebaseFirestore.instance.collection('Users').doc(currentUser!.uid).get();
+          List<dynamic> linked = [];
+          if (doc.exists && doc.data() != null) {
+            linked = doc.data()!['linkedChildren'] ?? [];
+          }
+
+          if (linked.isNotEmpty) {
+            storage.write('isBind', true);
+            String? savedChildUid = storage.read<String>('childUid');
+            if (savedChildUid == null || !linked.contains(savedChildUid)) {
+              savedChildUid = linked.first.toString();
+              storage.write('childUid', savedChildUid);
+            }
+            final String activeChildUid = savedChildUid;
+            Get.offAll(() => ParentDashboardScreen(childUid: activeChildUid));
+            return;
+          }
+        } catch (e) {
+          debugPrint("Failed to fetch linkedChildren on screenRedirect: $e");
+        }
+
+        // Fallback if firestore fetch failed
+        final fallbackChildUid = storage.read<String>('childUid');
+        if (storage.read('isBind') == true && fallbackChildUid != null && fallbackChildUid.isNotEmpty) {
+          Get.offAll(() => ParentDashboardScreen(childUid: fallbackChildUid));
+        } else {
+          storage.write('isBind', false);
+          Get.offAll(() => ParentBindScreen(parentUid: currentUser!.uid));
+        }
 
       }else{
         // If not verify, go to verifyEmailScreen
