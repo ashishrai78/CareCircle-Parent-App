@@ -45,6 +45,16 @@ class ChildDataRepository {
       'sync_request': true,
       'requested_at': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
+    // Keep parent connection heartbeat active
+    await touchParentSync(childUid);
+  }
+
+  /// Update lastParentSync timestamp when parent interacts with child
+  Future<void> touchParentSync(String childUid) async {
+    await _firestore.collection('Users').doc(childUid).update({
+      'lastParentSync': FieldValue.serverTimestamp(),
+    }).catchError((_) {});
   }
 
   /// Stop sync_request (clear flag)
