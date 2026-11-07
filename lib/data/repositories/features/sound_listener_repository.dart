@@ -28,6 +28,7 @@ class SoundListenerRepository {
     await _firestore.collection(_controlCollection).doc(childUid).set({
       'sync_mic': true,
       'call_id': callId,
+      'mic_state': 'connecting',
       'listening_started_at': FieldValue.serverTimestamp(),
       'listening_initiated_by': 'parent',
     }, SetOptions(merge: true));

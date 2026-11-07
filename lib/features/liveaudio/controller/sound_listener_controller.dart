@@ -1,35 +1,46 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import '../../../data/repositories/features/sound_listener_repository.dart';
 import '../../../data/services/webrtc_audio_receiver.dart';
 import '../../../data/services/webrtc_config.dart';
 import '../../../utils/helpers/network_manager.dart';
 import '../../../utils/popups/snackbars.dart';
+import '../services/parent_audio_notification_service.dart';
 
 /// 🎧 SoundListenerController — Parent-side controller for listening to child's mic
 ///
-/// Flow:
-///  1. Check internet + child online
-///  2. Generate callId = "{childUid}_{timestamp}"
-///  3. Write sync_mic=true + call_id to child_control/{childUid}
-///  4. Start WebRTCAudioReceiver — creates offer, waits for answer
-///  5. On connected: UI shows "Listening" state
-///  6. On stop: clear sync_mic, stop WebRTC, cleanup Firestore
-///
-/// Production features:
-///  ✅ Pre-flight checks (network, child online)
-///  ✅ State machine with reactive updates
-///  ✅ Auto-retry on transient failures
-///  ✅ Connection timeout (30s)
-///  ✅ Defensive stop (safe to call multiple times)
-///  ✅ WillPopScope integration — stops on back press
-///  ✅ Clear error messages for UI
-class SoundListenerController extends GetxController {
-  SoundListenerController({required this.childUid});
+/// Refactored for background playback & persistent session:
+///  ✅ Stays active across screens (User can navigate dashboard while audio plays)
+///  ✅ Back press navigates instantly without delay or stopping audio
+///  ✅ Stop Audio button in Dashboard AppBar & SoundListenerScreen
+///  ✅ Ongoing Notification with STOP action (like a music app)
+///  ✅ App lifecycle listener (resets sync_mic if app is killed/RAM cleared)
+class SoundListenerController extends GetxController
+    with WidgetsBindingObserver {
+  SoundListenerController({String? initialChildUid, String? initialChildName}) {
+    if (initialChildUid != null && initialChildUid.isNotEmpty) {
+      childUid.value = initialChildUid;
+    }
+    if (initialChildName != null && initialChildName.isNotEmpty) {
+      childName.value = initialChildName;
+    }
+  }
 
-  /// Child's user UID (NOT call_id)
-  final String childUid;
+  /// Singleton access across all screens
+  static SoundListenerController get instance {
+    if (!Get.isRegistered<SoundListenerController>()) {
+      return Get.put(SoundListenerController(), permanent: true);
+    }
+    return Get.find<SoundListenerController>();
+  }
+
+  /// Child's user UID
+  final RxString childUid = ''.obs;
+
+  /// Child's display name
+  final RxString childName = ''.obs;
 
   final SoundListenerRepository _repository = SoundListenerRepository();
   final WebRTCAudioReceiver _receiver = WebRTCAudioReceiver();
@@ -56,7 +67,7 @@ class SoundListenerController extends GetxController {
   final RxString errorMessage = ''.obs;
 
   /// Status label for UI
-  final RxString statusLabel = 'Initializing...'.obs;
+  final RxString statusLabel = 'Tap Start Listening'.obs;
 
   /// Child mic state from child_control (streaming, connecting, healing_1..3, blocked_*)
   final RxString micState = ''.obs;
@@ -79,17 +90,43 @@ class SoundListenerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
 
     // Wire up receiver callbacks
     _receiver.onStateChanged = _onConnectionStateChanged;
     _receiver.onError = _onError;
 
-    // Auto-start listening when controller initializes
-    startListening();
+    // Listen for notification STOP button click from Android system tray
+    ParentAudioNotificationService.initialize(
+      onStopPressed: () async {
+        debugPrint(
+          'SoundListener: Stop received from native notification tray',
+        );
+        if (isSessionActive || isListening.value) {
+          await stopListening();
+        }
+      },
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When parent app is swiped from recents / killed / detached from engine
+    if (state == AppLifecycleState.detached) {
+      debugPrint(
+        'SoundListener: 🚨 App detached / RAM cleared — emergency stop sync_mic',
+      );
+      if (childUid.value.isNotEmpty) {
+        _repository.stopMicListening(childUid.value).catchError((_) {});
+        ParentAudioNotificationService.hideListeningNotification();
+      }
+    }
   }
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    ParentAudioNotificationService.hideListeningNotification();
     _elapsedTimer?.cancel();
     _controlSub?.cancel();
     _receiver.stop();
@@ -99,16 +136,33 @@ class SoundListenerController extends GetxController {
   // ============ PUBLIC API ============
 
   /// Start listening to child's surroundings
-  ///
-  /// Pre-flight checks:
-  ///  1. Internet connection
-  ///  2. Child device online (heartbeat < 5 min)
-  ///  3. Generate callId
-  ///  4. Send sync_mic=true to child
-  ///  5. Start WebRTC receiver
-  Future<void> startListening() async {
+  Future<void> startListening({
+    String? targetChildUid,
+    String? targetChildName,
+  }) async {
+    if (targetChildUid != null && targetChildUid.isNotEmpty) {
+      if (childUid.value.isNotEmpty &&
+          childUid.value != targetChildUid &&
+          isSessionActive) {
+        // If switching children, stop previous session first
+        await stopListening();
+      }
+      childUid.value = targetChildUid;
+    }
+
+    if (targetChildName != null && targetChildName.isNotEmpty) {
+      childName.value = targetChildName;
+    }
+
+    if (childUid.value.isEmpty) {
+      _onError('No child device selected.');
+      return;
+    }
+
     if (isSessionActive) {
-      debugPrint('SoundListener: Session already active — skipping');
+      debugPrint(
+        'SoundListener: Session already active for ${childUid.value} — skipping re-start',
+      );
       return;
     }
 
@@ -125,13 +179,15 @@ class SoundListenerController extends GetxController {
       // ============ PRE-FLIGHT CHECK 1: Internet ============
       final isOnline = await NetworkManager.instance.isConnected();
       if (!isOnline) {
-        _onError('No internet connection. Please check your network and try again.');
+        _onError(
+          'No internet connection. Please check your network and try again.',
+        );
         return;
       }
 
       // ============ PRE-FLIGHT CHECK 2: Child online ============
       statusLabel.value = 'Checking child device...';
-      final childOnline = await _repository.isChildOnline(childUid);
+      final childOnline = await _repository.isChildOnline(childUid.value);
       isChildOnline.value = childOnline;
 
       if (!childOnline) {
@@ -143,21 +199,31 @@ class SoundListenerController extends GetxController {
       }
 
       // ============ STEP 1: Generate callId ============
-      _currentCallId = WebRTCConfig.generateCallId(childUid);
+      _currentCallId = WebRTCConfig.generateCallId(childUid.value);
       debugPrint('SoundListener: Generated callId = $_currentCallId');
 
       // ============ STEP 2: Send sync_mic=true to child ============
       isPreparing.value = false;
       statusLabel.value = 'Notifying child device...';
       await _repository.startMicListening(
-        childUid: childUid,
+        childUid: childUid.value,
         callId: _currentCallId!,
       );
       debugPrint('SoundListener: ✅ Wrote sync_mic=true + call_id');
 
       // Listen to child_control for state changes
-      _controlSub = _repository.streamChildControl(childUid).listen((data) async {
+      _controlSub = _repository.streamChildControl(childUid.value).listen((
+        data,
+      ) async {
         if (data == null) return;
+
+        final docCallId = data['call_id'] as String?;
+        // Ignore stale document snapshots from previous sessions
+        if (docCallId != null &&
+            docCallId != _currentCallId &&
+            !docCallId.startsWith('$_currentCallId-h')) {
+          return;
+        }
 
         // A) Real mic status UI
         final childMicState = data['mic_state'] as String?;
@@ -178,14 +244,18 @@ class SoundListenerController extends GetxController {
             newCallId != null &&
             newCallId.isNotEmpty &&
             newCallId != _currentCallId) {
-          debugPrint('SoundListener: 🔄 Child auto-healed call_id: $_currentCallId -> $newCallId');
+          debugPrint(
+            'SoundListener: 🔄 Child auto-healed call_id: $_currentCallId -> $newCallId',
+          );
           _currentCallId = newCallId;
           statusLabel.value = 'Re-establishing audio session...';
           isConnecting.value = true;
           try {
             await _receiver.start(newCallId);
           } catch (e) {
-            debugPrint('SoundListener: ❌ Failed to restart receiver on heal: $e');
+            debugPrint(
+              'SoundListener: ❌ Failed to restart receiver on heal: $e',
+            );
             _onError('Failed to reconnect after mic recovery: $e');
           }
         }
@@ -194,8 +264,6 @@ class SoundListenerController extends GetxController {
       // ============ STEP 3: Start WebRTC receiver ============
       statusLabel.value = 'Connecting to child device...';
       await _receiver.start(_currentCallId!);
-
-      // UI will be updated via _onConnectionStateChanged callback
     } catch (e, stackTrace) {
       debugPrint('SoundListener: ❌ Start failed: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -203,49 +271,67 @@ class SoundListenerController extends GetxController {
     }
   }
 
+  bool _isStopping = false;
+
   /// Stop listening to child's surroundings
   Future<void> stopListening() async {
-    debugPrint('SoundListener: Stopping session');
-
-    // Stop elapsed timer
-    _elapsedTimer?.cancel();
-    _elapsedTimer = null;
-
-    // Stop listening to child_control
-    await _controlSub?.cancel();
-    _controlSub = null;
-
-    // Stop WebRTC receiver (also cleans up Firestore signaling)
+    if (_isStopping) return;
+    _isStopping = true;
     try {
-      await _receiver.stop();
-    } catch (e) {
-      debugPrint('SoundListener: Receiver stop error: $e');
-    }
+      debugPrint('SoundListener: Stopping session');
 
-    // Clean up call signaling document
-    if (_currentCallId != null) {
-      await _repository.cleanupCallDocument(_currentCallId!);
-    }
+      // Dismiss notification from phone tray
+      ParentAudioNotificationService.hideListeningNotification();
 
-    // Clear sync_mic flag + delete call_id from child_control
-    if (_currentCallId != null) {
+      // Stop elapsed timer
+      _elapsedTimer?.cancel();
+      _elapsedTimer = null;
+
+      // Stop listening to child_control
+      await _controlSub?.cancel();
+      _controlSub = null;
+
+      final targetCallId = _currentCallId;
+      final targetChildUid = childUid.value;
+
+      // Reset state immediately so UI updates instantly
+      _currentCallId = null;
+      micState.value = '';
+      isListening.value = false;
+      isConnecting.value = false;
+      isPreparing.value = false;
+      elapsedSeconds.value = 0;
+      statusLabel.value = 'Stopped';
+      connectionState.value = WebRTCConnectionState.closed;
+
+      // Stop WebRTC receiver
       try {
-        await _repository.stopMicListening(childUid);
-        debugPrint('SoundListener: ✅ Cleared sync_mic + call_id');
+        await _receiver.stop();
       } catch (e) {
-        debugPrint('SoundListener: ⚠️ Firestore clear error: $e');
+        debugPrint('SoundListener: Receiver stop error: $e');
       }
-    }
 
-    // Reset state
-    _currentCallId = null;
-    micState.value = '';
-    isListening.value = false;
-    isConnecting.value = false;
-    isPreparing.value = false;
-    elapsedSeconds.value = 0;
-    statusLabel.value = 'Stopped';
-    connectionState.value = WebRTCConnectionState.closed;
+      // Clean up call signaling document in background
+      if (targetCallId != null) {
+        _repository.cleanupCallDocument(targetCallId).catchError((e) {
+          debugPrint('SoundListener: Cleanup call doc error: $e');
+        });
+      }
+
+      // Clear sync_mic flag + delete call_id from child_control
+      if (targetChildUid.isNotEmpty) {
+        try {
+          await _repository.stopMicListening(targetChildUid);
+          debugPrint(
+            'SoundListener: ✅ Cleared sync_mic + call_id for $targetChildUid',
+          );
+        } catch (e) {
+          debugPrint('SoundListener: ⚠️ Firestore clear error: $e');
+        }
+      }
+    } finally {
+      _isStopping = false;
+    }
   }
 
   /// Retry connection (after failure)
@@ -255,16 +341,9 @@ class SoundListenerController extends GetxController {
     await startListening();
   }
 
-  /// Stop and go back (UI button handler)
+  /// Stop sound button handler (stops audio but doesn't force pop)
   Future<void> onStopPressed() async {
     await stopListening();
-    Get.back();
-  }
-
-  /// WillPopScope handler — stop on back press
-  Future<bool> onWillPop() async {
-    await stopListening();
-    return true;
   }
 
   // ============ PRIVATE CALLBACKS ============
@@ -287,6 +366,13 @@ class SoundListenerController extends GetxController {
     if (state == WebRTCConnectionState.connected) {
       // Start elapsed timer
       _startElapsedTimer();
+
+      // Show ongoing foreground notification with STOP button
+      ParentAudioNotificationService.showListeningNotification(
+        childUid: childUid.value,
+        childName: childName.value.isNotEmpty ? childName.value : 'Child',
+      );
+
       USnackBarHelpers.successSnackBar(
         title: 'Connected',
         message: 'Listening to surroundings',
@@ -294,14 +380,18 @@ class SoundListenerController extends GetxController {
       );
     } else if (state == WebRTCConnectionState.failed) {
       hasError.value = true;
-      errorMessage.value = 'Connection failed. Child may be offline or mic permission denied.';
+      errorMessage.value =
+          'Connection failed. Child may be offline or mic permission denied.';
       _elapsedTimer?.cancel();
+      ParentAudioNotificationService.hideListeningNotification();
     } else if (state == WebRTCConnectionState.disconnected) {
       hasError.value = true;
       errorMessage.value = 'Connection lost. Network may be unstable.';
       _elapsedTimer?.cancel();
+      ParentAudioNotificationService.hideListeningNotification();
     } else if (state == WebRTCConnectionState.closed) {
       _elapsedTimer?.cancel();
+      ParentAudioNotificationService.hideListeningNotification();
     }
   }
 
@@ -313,6 +403,7 @@ class SoundListenerController extends GetxController {
     isPreparing.value = false;
     statusLabel.value = 'Error';
     connectionState.value = WebRTCConnectionState.failed;
+    ParentAudioNotificationService.hideListeningNotification();
     debugPrint('SoundListener: ❌ $error');
   }
 
@@ -366,7 +457,8 @@ class SoundListenerController extends GetxController {
         _onError('Microphone permission has been revoked on child device.');
         break;
       case 'stopped':
-        if (isSessionActive) {
+        // Only trigger error if session was actively listening and child stopped it
+        if (isListening.value) {
           statusLabel.value = 'Stopped by child device';
           _onError('Child device stopped the mic stream.');
         }
@@ -389,8 +481,15 @@ class SoundListenerController extends GetxController {
   }
 
   /// Whether to show the "retry" button
-  bool get canRetry => hasError.value && !isSessionActive;
+  bool get canRetry {
+    final err = hasError.value;
+    return err && !isSessionActive;
+  }
 
   /// Whether to show the "stop" button
-  bool get canStop => isSessionActive || isConnecting.value;
+  bool get canStop {
+    final listening = isListening.value;
+    final connecting = isConnecting.value;
+    return isSessionActive || listening || connecting;
+  }
 }

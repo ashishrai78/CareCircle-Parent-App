@@ -9,6 +9,7 @@ import '../../../utils/constants/colors.dart';
 import '../../../utils/constants/sizes.dart';
 import '../../contact/screens/call_logs_screen.dart';
 import '../../liveaudio/sound_listener_screen.dart';
+import '../../liveaudio/controller/sound_listener_controller.dart';
 import '../../notification/screens/notifications_screen.dart';
 import '../../personalization/controllers/user_controller.dart';
 import '../controller/parent_dashboard_controller.dart';
@@ -94,7 +95,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   void _navigateToSoundListener() {
-    Get.to(() => SoundListenerScreen(childUid: widget.childUid));
+    Get.to(() => SoundListenerScreen(
+          childUid: widget.childUid,
+          childName: _childDisplayName,
+        ));
   }
 
   @override
@@ -182,6 +186,43 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
         ),
         actions: [
+          // 🛑 Live Audio Stop Button — Shown only when audio is active
+          Obx(() {
+            final audioCtrl = SoundListenerController.instance;
+            final isListening = audioCtrl.isListening.value;
+            final isConnecting = audioCtrl.isConnecting.value;
+            final isAudioActive = audioCtrl.isSessionActive || isListening || isConnecting;
+
+            if (!isAudioActive) return const SizedBox.shrink();
+
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await audioCtrl.stopListening();
+                },
+                icon: const Icon(Icons.stop_circle, size: 18, color: Colors.white),
+                label: const Text(
+                  'Stop Audio',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: UColors.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                  minimumSize: const Size(0, 36),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            );
+          }),
           IconButton(
             icon: const Icon(Icons.notifications),
             tooltip: 'View Notifications',
