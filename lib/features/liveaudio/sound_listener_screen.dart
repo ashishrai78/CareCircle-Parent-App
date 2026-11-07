@@ -41,7 +41,7 @@ class _SoundListenerScreenState extends State<SoundListenerScreen>
   void initState() {
     super.initState();
 
-    controller = Get.put(SoundListenerController(childUid: widget.childUid));
+    controller = SoundListenerController.instance;
 
     // Pulse animation for "listening" state
     _pulseController = AnimationController(
@@ -51,26 +51,28 @@ class _SoundListenerScreenState extends State<SoundListenerScreen>
     _pulseAnimation = Tween<double>(begin: 0.8, end: 1.4).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    // Call startListening safely after first frame build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        controller.startListening(
+          targetChildUid: widget.childUid,
+          targetChildName: widget.childName,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
-    controller.stopListening();
-    Get.delete<SoundListenerController>();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          await controller.onWillPop();
-          Get.back();
-        }
-      },
+      canPop: true,
       child: Scaffold(
         backgroundColor: UColors.light,
         appBar: AppBar(
@@ -585,7 +587,7 @@ class _SoundListenerScreenState extends State<SoundListenerScreen>
           if (canStop) ...[
             ElevatedButton.icon(
               onPressed: controller.onStopPressed,
-              icon: const Icon(Icons.stop),
+              icon: const Icon(Icons.stop_circle_rounded),
               label: const Text('Stop Listening'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: UColors.error,
@@ -593,9 +595,18 @@ class _SoundListenerScreenState extends State<SoundListenerScreen>
                 padding: const EdgeInsets.symmetric(vertical: USizes.md),
               ),
             ),
+            const SizedBox(height: USizes.sm),
+            OutlinedButton.icon(
+              onPressed: () => Get.back(),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Back to Dashboard (Audio remains active)'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: USizes.md),
+              ),
+            ),
           ],
 
-          // Back button (always available)
+          // Back button (when not listening)
           if (!canStop) ...[
             OutlinedButton.icon(
               onPressed: () => Get.back(),

@@ -9,10 +9,37 @@ import java.io.ByteArrayOutputStream
 
 class MainActivity : FlutterActivity() {
 
+    companion object {
+        var audioMethodChannel: MethodChannel? = null
+    }
+
     private val APP_INFO_CHANNEL = "app_info_channel"
+    private val AUDIO_NOTIFICATION_CHANNEL = "carecircle_parent_audio_channel"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // 🔹 Live Audio Foreground Service & Notification Channel
+        val audioChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            AUDIO_NOTIFICATION_CHANNEL
+        )
+        audioMethodChannel = audioChannel
+        audioChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startAudioNotification" -> {
+                    val childUid = call.argument<String>("childUid") ?: ""
+                    val childName = call.argument<String>("childName") ?: "Child"
+                    ParentAudioService.startService(this, childUid, childName)
+                    result.success(true)
+                }
+                "stopAudioNotification" -> {
+                    ParentAudioService.stopService(this)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         // 🔹 App Icon + Name Method Channel
         MethodChannel(
@@ -37,6 +64,11 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    override fun onDestroy() {
+        audioMethodChannel = null
+        super.onDestroy()
     }
 
     private fun drawableToBitmap(drawable: android.graphics.drawable.Drawable): Bitmap {
